@@ -1,11 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Get, Injectable } from '@nestjs/common';
 import { ContainerDirectoryItem, ExifDateTime, Maybe, Tags } from 'exiftool-vendored';
 import { firstDateTime } from 'exiftool-vendored/dist/FirstDateTime';
 import { Insertable } from 'kysely';
-import _ from 'lodash';
+import _, { mergeWith } from 'lodash';
 import { Duration } from 'luxon';
 import { constants } from 'node:fs/promises';
 import path from 'node:path';
+import { json } from 'node:stream/consumers';
+import { promises as fs } from 'fs';
 import { SystemConfig } from 'src/config';
 import { JOBS_ASSET_PAGINATION_SIZE } from 'src/constants';
 import { StorageCore } from 'src/cores/storage.core';
@@ -14,6 +16,7 @@ import { OnEvent, OnJob } from 'src/decorators';
 import { AssetFaceEntity } from 'src/entities/asset-face.entity';
 import { AssetEntity } from 'src/entities/asset.entity';
 import { PersonEntity } from 'src/entities/person.entity';
+import { SocialMediaEntity } from 'src/entities/social-media.entity';
 import {
   AssetType,
   DatabaseLock,
@@ -33,6 +36,7 @@ import { JobOf } from 'src/types';
 import { isFaceImportEnabled } from 'src/utils/misc';
 import { usePagination } from 'src/utils/pagination';
 import { upsertTags } from 'src/utils/tag';
+import { console } from 'node:inspector';
 
 /** look for a date from these tags (in order) */
 const EXIF_DATE_TAGS: Array<keyof Tags> = [
@@ -75,6 +79,10 @@ const validateRange = (value: number | undefined, min: number, max: number): Non
 
   return val;
 };
+
+interface JsonData {
+  [key: string]: any; // Allows accessing any property dynamically
+}
 
 @Injectable()
 export class MetadataService extends BaseService {
@@ -158,6 +166,405 @@ export class MetadataService extends BaseService {
 
     return JobStatus.SUCCESS;
   }
+  
+  private async ExifFromJsonTag(jsonData: JsonData): Promise<ImmichTags> {
+    
+    console.log('JSON --------------------------------------------');
+    if(jsonData?.user?.bio_links)
+    {
+      console.log('JSON BIOLINKS : ',jsonData?.user?.bio_links);
+    }
+
+
+    const imichtags: ImmichTags = {
+        DateTimeOriginal: jsonData?.date || undefined,
+        ShortCode: jsonData?.shortcode || undefined,
+        ImageWidth: jsonData?.width || undefined,
+        ImageHeight: jsonData?.height || undefined,
+        
+        TaggedPeople: Array.isArray(jsonData?.tagged_users)
+      ? jsonData.tagged_users.map(user => ({
+          id: user.id,
+          TaggedUserName: user.username,
+          FullName: user.full_name,
+        }))
+      : undefined,
+       
+
+        DateTimeCreated: jsonData?.post_date || undefined,
+        
+        Description: jsonData?.description || undefined,
+        
+        TagsList: jsonData?.tags ? jsonData.tags.map((tag: string) => tag.replace(/^#/, "")) : undefined,
+        
+        LocationId: jsonData?.location_id || undefined,
+        LocationName: jsonData?.location_slug || undefined,
+        LocationUrl: jsonData?.location_url || undefined,
+        
+        // "sidecar_media_id": "string",
+        // "sidecar_shortcode": "string",
+        
+        
+        OwnerID: jsonData?.username || undefined,
+        OwnerName: jsonData?.fullname || undefined,
+        SocialMediaOwnerId: jsonData?.owner_id || undefined,
+        
+        TaggedUserName: jsonData?.tagged_username || undefined,
+        
+        TaggedFullName: jsonData?.tagged_full_name || undefined,
+        
+        FileName: jsonData?.filename || undefined,
+        FileTypeExtension: jsonData?.extension || undefined,
+        
+        Coauthors: Array.isArray(jsonData?.coauthors)
+      ? jsonData.coauthors.map(author => ({
+          id: author.id,
+          TaggedUserName: author.username,
+          FullName: author.full_name,
+        }))
+      : undefined,
+        
+         
+        HighLightTitle: jsonData?.highlight_title || undefined,
+        Biography: jsonData?.biography || undefined,
+        
+        BioLinks: jsonData?.user?.bio_links
+        ?.filter((link: { title?: string; lynx_url?: string; url?: string; link_type?: string }) => link?.lynx_url && link?.link_type) // Ensure valid entries
+        ?.map((link: { title?: string; lynx_url: string; url?: string; link_type: string }) => ({
+            title: link.title || "",  // Default empty string if missing
+            lynx_url: link.lynx_url,
+            url: link.url || undefined,  // Set `undefined` if missing
+            link_type: link.link_type
+        })) || undefined,
+       
+        FbProfileBioLink: jsonData?.user?.fb_profile_biolink || undefined,
+        
+        SelfData: jsonData?.user?.biography_with_entities?.raw_text || undefined,
+        
+        BiographyWithEntities: jsonData?.user?.biography_with_entities
+        ? {
+            raw_text: jsonData.user.biography_with_entities.raw_text,
+            mentions: jsonData.user.biography_with_entities.entities
+              ?.map((entity: { user?: { username: string } }) => entity?.user?.username)
+              .filter((username: string | undefined) => username !== undefined) || [],
+            hashtags: jsonData.user.biography_with_entities.entities
+              ?.map((entity: { hashtag?: { name: string } }) => entity?.hashtag?.name)
+              .filter((name: string | undefined) => name !== undefined) || [],
+
+          }
+        : undefined,
+
+
+        
+        
+        ExternalUrl : jsonData?.user?.external_url || undefined,
+
+        
+        Fbid : jsonData?.user?.fbid || undefined,
+
+        UserFullName: jsonData?.user?.full_name || undefined,
+        UserId : jsonData?.user?.id || undefined,
+        // "user.group_metadata": "unknown",
+        // "user.id": "string",
+        
+        // "user.business_contact_method": "string",
+        // "user.business_email": "unknown",
+        // "user.business_phone_number": "unknown",
+        
+        UserName : jsonData?.user?.username || undefined,
+        // "user.connected_fb_page": "unknown",
+        
+        // "user.has_onboarded_to_text_post_app": "int",
+        // "user.show_text_post_app_badge": [
+        //     "unknown",
+        //     "int"
+        // ],
+        
+
+      // Extract related profiles
+      RelatedProfiles: jsonData?.user?.edge_related_profiles?.edges
+        ?.filter((edge: { node?: any }) => edge.node) // Filter out any invalid entries
+        .map((edge: { 
+            node: { 
+              id: string; 
+              full_name: string; 
+              is_private: boolean; 
+              is_verified: boolean; 
+              profile_pic_url?: string; 
+              username: string; 
+            } 
+          }) => ({
+          id: edge.node.id,
+          full_name: edge.node.full_name,
+          is_private: edge.node.is_private,
+          is_verified: edge.node.is_verified,
+          profile_pic_url: edge.node.profile_pic_url || undefined,
+          username: edge.node.username
+        })) || undefined,
+
+      
+        // "user.category": "string",
+        Category: jsonData?.category || undefined,
+        SubCategorie: jsonData?.subcategory || undefined,
+    };
+    console.log('JSON --------------------------------------------');
+    console.log('JSON imichtags : ',imichtags);
+    // Wrap the result in a Promise and return
+    return Promise.resolve(imichtags);
+  }
+
+
+  private async processSocialMedia(tags: ImmichTags, asset: AssetEntity): Promise<void> {
+    process.stdout.write("----------------------------social media---------------------------------\n");
+    const socialMedia = new Map<string, SocialMediaEntity>();
+
+    // Process the main social media
+    const social_main_media = await this.processProfile(tags.OwnerName ?? '', String(tags.OwnerID) ?? '', String(tags.SocialMediaOwnerId) ?? '', tags.Category ?? '', asset.ownerId, '');
+    socialMedia.set(social_main_media.platformUserId, social_main_media);
+
+    // Process the second social media
+    const social_second_Media = await this.processProfile(String(tags.UserFullName ?? ''), String(tags.UserName ?? ''), String(tags.UserId ?? ''), tags.Category ?? '', asset.ownerId, String(tags.SelfData ?? ''));
+
+    if (socialMedia.has(social_second_Media.platformUserId)) {
+        // Update the existing social media entry in the map
+        this.updateSocialMedia(social_second_Media, socialMedia.get(social_second_Media.platformUserId)!);
+    } else {
+        // Add a new social media entry to the map
+        socialMedia.set(social_second_Media.platformUserId, social_second_Media);
+    }
+
+    process.stdout.write("----------------------------related profiles---------------------------------\n");
+    if (tags.RelatedProfiles) {
+        await Promise.all(tags.RelatedProfiles.map(async profile => {
+            const profileSocialMedia = await this.processProfile(profile.full_name ?? '', profile.username ?? '', profile.id ?? '', 'instagram', asset.ownerId, '', '');
+            if (socialMedia.has(profileSocialMedia.platformUserId)) {
+                this.updateSocialMedia(profileSocialMedia, socialMedia.get(profileSocialMedia.platformUserId)!);
+            } else {
+                socialMedia.set(profileSocialMedia.platformUserId, profileSocialMedia);
+            }
+        }));
+    }
+
+    process.stdout.write("----------------------------coauthors---------------------------------\n");
+    if (tags.Coauthors) {
+        await Promise.all(tags.Coauthors.map(async author => {
+            const authorSocialMedia =  await this.processProfile(author.FullName ?? '', author.TaggedUserName ?? '', String(author.id) ?? '', 'instagram', asset.ownerId);
+            if (socialMedia.has(authorSocialMedia.platformUserId)) {
+                this.updateSocialMedia(authorSocialMedia, socialMedia.get(authorSocialMedia.platformUserId)!);
+            } else {
+                socialMedia.set(authorSocialMedia.platformUserId, authorSocialMedia);
+            }
+        }));
+    }
+
+    process.stdout.write("----------------------------tagged people---------------------------------\n");
+    if (tags.TaggedPeople) {
+        await Promise.all(tags.TaggedPeople.map(async tagged => {
+            const taggedSocialMedia = await this.processProfile(tagged.FullName ?? '', tagged.TaggedUserName ?? '', String(tagged.id) ?? '', 'instagram', asset.ownerId);
+            if (socialMedia.has(taggedSocialMedia.platformUserId)) {
+                this.updateSocialMedia(taggedSocialMedia, socialMedia.get(taggedSocialMedia.platformUserId)!);
+            } else {
+                socialMedia.set(taggedSocialMedia.platformUserId, taggedSocialMedia);
+            }
+        }));
+    }
+
+    process.stdout.write("----------------------------biography with entities---------------------------------\n");
+    if (tags.BiographyWithEntities?.mentions) {
+        await Promise.all(tags.BiographyWithEntities.mentions.map(async mention => {
+            const mentionSocialMedia = await this.processProfile(mention ?? '', mention ?? '', '', 'instagram', asset.ownerId);
+            if (socialMedia.has(mentionSocialMedia.platformUserId)) {
+                this.updateSocialMedia(mentionSocialMedia, socialMedia.get(mentionSocialMedia.platformUserId)!);
+            } else {
+                socialMedia.set(mentionSocialMedia.platformUserId, mentionSocialMedia);
+            }
+        }));
+    }
+
+    process.stdout.write("----------------------------bio links---------------------------------\n");
+    if (tags.BioLinks) {
+        await Promise.all(tags.BioLinks.map(async link => {
+            const platform = link.title.trim() || this.getPlatformFromUrl(String(link.url));
+            const linkSocialMedia = await this.processProfile(link.title ?? '', this.getUserIdFromUrl(String(link.url)) ?? '', '', platform ?? '', asset.ownerId, '', '', link.url ?? '');
+            if (socialMedia.has(linkSocialMedia.platformUserId)) {
+                this.updateSocialMedia(linkSocialMedia, socialMedia.get(linkSocialMedia.platformUserId)!);
+            } else {
+                socialMedia.set(linkSocialMedia.platformUserId, linkSocialMedia);
+            }
+        }));
+    }
+
+    process.stdout.write("----------------------------fb profile bio link---------------------------------\n");
+    
+    if (tags.FbProfileBioLink) {
+        const fbProfileBioLink = await this.processProfile(tags.FbProfileBioLink.name ?? '', '', '', 'facebook', asset.ownerId, '', '', tags.FbProfileBioLink.url ?? '');
+        if (socialMedia.has(fbProfileBioLink.platformUserId)) {
+            this.updateSocialMedia(fbProfileBioLink, socialMedia.get(fbProfileBioLink.platformUserId)!);
+        } else {
+            socialMedia.set(fbProfileBioLink.platformUserId, fbProfileBioLink);
+        }
+    }
+}
+
+
+private async processProfile(
+    name: string, userId: string, userIdHash: string, platform: string, ownerId: string,
+    description: string = '', thumbnailPath: string = '', url: string = ''
+): Promise<SocialMediaEntity> {
+    const person = await this.personRepository.getByName(ownerId, name, { withHidden: false });
+    const personEntity = person?.at(0);
+    
+    const socialMedia = new SocialMediaEntity();
+    socialMedia.name = name;
+    if (personEntity) {
+      socialMedia.person = personEntity;
+    }
+    socialMedia.thumbnailPath = thumbnailPath || '';
+    socialMedia.platform = platform;
+    
+    if(!userId){
+        userId = url;
+    }
+
+    socialMedia.platformUserId = userId;
+    socialMedia.platformUserIdHash = userIdHash;
+    socialMedia.description = description;
+
+    if (!platform) {
+        socialMedia.platform = this.getPlatformFromUrl(url);
+    }
+
+    if (platform === 'instagram' && !url) {
+        socialMedia.url = `https://www.instagram.com/${userId}`;
+    } else {
+        socialMedia.url = url;
+    }
+
+    socialMedia.followers = 0;
+    socialMedia.following = 0;
+    socialMedia.posts = 0;
+    socialMedia.lastUpdated = new Date();
+    socialMedia.lastDownloaded = new Date();
+    socialMedia.lastDownloadedNode = '';
+
+    process.stdout.write(`Social Media: ${JSON.stringify(socialMedia)}\n`);
+    
+    return socialMedia;
+}
+
+private updateSocialMedia(socialMedia: SocialMediaEntity, existing: SocialMediaEntity): void {
+  if (existing.platform === socialMedia.platform) {
+      // Update existing fields if they are empty, undefined or have default values
+      if (!existing.name && socialMedia.name) existing.name = socialMedia.name;
+      if (!existing.thumbnailPath && socialMedia.thumbnailPath) existing.thumbnailPath = socialMedia.thumbnailPath;
+      if (!existing.platformUserId && socialMedia.platformUserId) existing.platformUserId = socialMedia.platformUserId;
+      if (!existing.platformUserIdHash && socialMedia.platformUserIdHash) existing.platformUserIdHash = socialMedia.platformUserIdHash;
+      if (!existing.description && socialMedia.description) existing.description = socialMedia.description;
+      if (!existing.url && socialMedia.url) existing.url = socialMedia.url;
+      if (existing.followers === undefined && socialMedia.followers !== undefined) existing.followers = socialMedia.followers;
+      if (existing.following === undefined && socialMedia.following !== undefined) existing.following = socialMedia.following;
+      if (existing.posts === undefined && socialMedia.posts !== undefined) existing.posts = socialMedia.posts;
+      if (!existing.lastUpdated && socialMedia.lastUpdated) existing.lastUpdated = socialMedia.lastUpdated;
+      if (!existing.lastDownloaded && socialMedia.lastDownloaded) existing.lastDownloaded = socialMedia.lastDownloaded;
+      if (!existing.lastDownloadedNode && socialMedia.lastDownloadedNode) existing.lastDownloadedNode = socialMedia.lastDownloadedNode;
+  }
+}
+
+
+  private getUserIdFromUrl(url : string): string {
+    const urlParts = url.split('/');
+    return urlParts[urlParts.length - 1];
+  }
+  private getPlatformFromUrl(url: string): string {
+    try {
+        const hostname = new URL(url).hostname; // Extracts domain (e.g., 'youtube.com')
+        const parts = hostname.replace("www.", "").split('.'); // Remove 'www.' and split
+        
+        return parts.length > 2 ? parts[1] : parts[0]; // Handles both 'xxx.tttt.com' and 'youtube.com'
+    } catch (error) {
+        console.error("Invalid URL:", url);
+        return "unknown"; // Handle invalid URLs
+    }
+}
+
+
+  private async updatePerson(person: PersonEntity, existing: PersonEntity): Promise<PersonEntity> {
+    if (existing.description !== person.description) {
+        existing.description = (existing.description ?? '') + person.description;
+    }
+    existing.updatedAt = new Date();
+    process.stdout.write(`Updated Person: ${JSON.stringify(existing)} \n`);
+    return existing;
+  }
+
+  private createPersonEntity(name: string, ownerId: string, owner: any, description: string = ''): PersonEntity {
+      const person = new PersonEntity();
+      person.name = String(name ?? '').trim();
+      person.ownerId = ownerId;
+      person.owner = owner;
+      person.thumbnailPath = '';
+      person.isHidden = false;
+      person.faceAssetId = null;
+      person.height = null;
+      person.age = null;
+      person.birthDate = null;
+      person.createdAt = new Date();
+      person.updatedAt = new Date();
+      person.description = description;
+      person.faces = [];
+      process.stdout.write(`Created Person: ${JSON.stringify(person)} \n`);
+      return person;
+}
+
+  private async processPerson(tags: ImmichTags, asset: AssetEntity): Promise<void> {
+    process.stdout.write("---------------------------- Processing People ---------------------------------\n");
+      
+      const people = new Map<string, PersonEntity>();
+      
+      // Process Main User & Owner
+      if (tags.UserName !== tags.OwnerID) {
+          const ownerName = tags.OwnerName || tags.OwnerID;
+          process.stdout.write(`Owner Name : ${ownerName}` + "\n");
+          process.stdout.write('Owner ID : ' + tags.OwnerID+"\n");
+          people.set(tags.OwnerID ?? '', this.createPersonEntity(ownerName ?? '', asset.ownerId, asset.owner));
+      }
+      
+      const userName = tags.UserFullName || tags.UserName;
+      process.stdout.write('Main User : ' + String(userName)+"\n");
+      process.stdout.write('Main User Name : ' + tags.UserName+"\n");
+      const mainUser = this.createPersonEntity(String(userName ?? ''), asset.ownerId, asset.owner, tags.SelfData);
+      people.set(String(tags.UserName ?? ''), mainUser);
+      
+      // Process Lists: RelatedProfiles, Coauthors, TaggedPeople, Biography Mentions
+      const listsToProcess = [
+          { list: tags.RelatedProfiles, key: "full_name", fallbackKey: "username" },
+          { list: tags.Coauthors, key: "FullName",fallbackKey: "TaggedUserName" },
+          { list: tags.TaggedPeople, key: "FullName",fallbackKey: "TaggedUserName" },
+          { list: tags.BiographyWithEntities?.mentions, key: "" ,fallbackKey: "" },
+      ];
+      
+      for (const { list, key, fallbackKey } of listsToProcess) {
+          if (list) {
+              list.forEach(async (entry) => {
+                  const name = key && fallbackKey ? (entry as any)?.[key] || (entry as any)?.[fallbackKey] || '' : entry;
+                  if (!name) return;
+                  
+                  process.stdout.write('Name : ' + name+"\n");
+                  process.stdout.write('Key : ' + (entry as any)?.[key]+"\n");
+                  process.stdout.write('Fallback Key : ' + (entry as any)?.[fallbackKey]+"\n");
+
+                  const person = this.createPersonEntity(name, asset.ownerId, asset.owner);
+                  
+                  if (people.has((entry as any)?.[fallbackKey])) {
+                      this.updatePerson(person, people.get((entry as any)?.[fallbackKey])!);
+                  } else {
+                      people.set((entry as any)?.[fallbackKey], person);
+                  }
+              });
+          }
+      }
+  }
+
 
   @OnJob({ name: JobName.METADATA_EXTRACTION, queue: QueueName.METADATA_EXTRACTION })
   async handleMetadataExtraction(data: JobOf<JobName.METADATA_EXTRACTION>): Promise<JobStatus> {
@@ -166,12 +573,32 @@ export class MetadataService extends BaseService {
     if (!asset) {
       return JobStatus.FAILED;
     }
-
+       
     const stats = await this.storageRepository.stat(asset.originalPath);
 
-    const exifTags = await this.getExifTags(asset);
+    const exifTagsData = await this.getExifTags(asset);
 
-    this.logger.verbose('Exif Tags', exifTags);
+    //read json sidecar tags
+    const sidecarJsonTags = await this.getExifJsonTags(asset);
+  
+    
+    //compare the contents of the two tags and use the one with more data and merge them
+    const customMerge = (objValue: any, srcValue: any) => {
+      if (Array.isArray(objValue) && Array.isArray(srcValue)) {
+        return Array.from(new Set([...objValue, ...srcValue])); // Merge & remove duplicates
+      }
+      return objValue !== undefined ? objValue : srcValue; // Exif wins for other values
+    };
+    
+    const exifTags = mergeWith({}, exifTagsData, sidecarJsonTags, customMerge);
+    
+    
+    console.log('Exif Tags --------------------------------------------');
+    
+    
+    console.log('Exif Tags', exifTags);
+
+    
 
     if (!asset.fileCreatedAt) {
       asset.fileCreatedAt = stats.mtime;
@@ -229,6 +656,9 @@ export class MetadataService extends BaseService {
       livePhotoCID: (exifTags.ContentIdentifier || exifTags.MediaGroupUUID) ?? null,
       autoStackId: this.getAutoStackId(exifTags),
     };
+
+    this.processPerson(exifTags, asset);
+    this.processSocialMedia(exifTags, asset);
 
     await this.applyTagList(asset, exifTags);
     await this.applyMotionPhotos(asset, exifTags);
@@ -347,10 +777,52 @@ export class MetadataService extends BaseService {
     return { width, height };
   }
 
+  
+  // Function to read and parse a JSON file
+  private async readJsonFile<T = unknown>(path: string): Promise<T | null> {
+    try {
+      const data = await fs.readFile(path, 'utf-8');
+
+      if (!data.trim()) {
+        console.warn(`Warning: JSON file at "${path}" is empty.`);
+        return null;
+      }
+
+      return JSON.parse(data) as T;
+    } catch (error) {
+      console.error(
+        `Error reading JSON file at "${path}": ${error instanceof Error ? error.message : String(error)}`
+      );
+      return null;
+    }
+  }
+
+  private async getExifJsonTags(asset: AssetEntity): Promise<ImmichTags> {
+
+    // Read the JSON file
+    const jsonFile = asset.originalPath + '.json';
+    console.log('jsonFile : ',jsonFile);
+    const jsonData = await this.readJsonFile<JsonData>(jsonFile);
+    if (!jsonData) {
+      return {};
+    }
+    else
+    {
+      console.log('jsonData : ',jsonData);
+    }
+
+    return this.ExifFromJsonTag(jsonData);
+  }
+
+
+
+  
+  
   private async getExifTags(asset: AssetEntity): Promise<ImmichTags> {
     const mediaTags = await this.metadataRepository.readTags(asset.originalPath);
     const sidecarTags = asset.sidecarPath ? await this.metadataRepository.readTags(asset.sidecarPath) : {};
     const videoTags = asset.type === AssetType.VIDEO ? await this.getVideoTags(asset.originalPath) : {};
+
 
     // prefer dates from sidecar tags
     const sidecarDate = firstDateTime(sidecarTags as Tags, EXIF_DATE_TAGS);
@@ -391,6 +863,9 @@ export class MetadataService extends BaseService {
 
     const results = await upsertTags(this.tagRepository, { userId: asset.ownerId, tags });
     await this.tagRepository.upsertAssetTags({ assetId: asset.id, tagIds: results.map((tag) => tag.id) });
+
+    //TODO generate albums from paths
+    
   }
 
   private async applyMotionPhotos(asset: AssetEntity, tags: ImmichTags) {

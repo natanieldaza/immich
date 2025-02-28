@@ -15,6 +15,7 @@ import { BulkIdResponseDto, BulkIdsDto } from 'src/dtos/asset-ids.response.dto';
 import { AuthDto } from 'src/dtos/auth.dto';
 import { AlbumUserEntity } from 'src/entities/album-user.entity';
 import { AlbumEntity } from 'src/entities/album.entity';
+import { AssetEntity } from 'src/entities/asset.entity';
 import { Permission } from 'src/enum';
 import { AlbumAssetCount, AlbumInfoOptions } from 'src/repositories/album.repository';
 import { BaseService } from 'src/services/base.service';
@@ -121,6 +122,32 @@ export class AlbumService extends BaseService {
     for (const { userId } of albumUsers) {
       await this.eventRepository.emit('album.invite', { id: album.id, userId });
     }
+
+    return mapAlbumWithAssets(album);
+  }
+
+  async createNoAuth(userId: string, asset: AssetEntity , dto: CreateAlbumDto): Promise<AlbumResponseDto> {
+    const albumUsers = dto.albumUsers || [];
+
+    for (const { userId } of albumUsers) {
+      const exists = await this.userRepository.get(userId, {});
+      if (!exists) {
+        throw new BadRequestException('User not found');
+      }
+    }
+
+    const assetIds: string[] = [asset.id];
+
+    const album = await this.albumRepository.create(
+      {
+        ownerId: userId,
+        albumName: dto.albumName,
+        description: dto.description,
+        albumThumbnailAssetId: assetIds[0] || null,
+      },
+      assetIds,
+      albumUsers,
+    );
 
     return mapAlbumWithAssets(album);
   }

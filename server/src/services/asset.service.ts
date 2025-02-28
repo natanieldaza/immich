@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import _ from 'lodash';
 import { DateTime, Duration } from 'luxon';
+import { json } from 'node:stream/consumers';
 import { JOBS_ASSET_PAGINATION_SIZE } from 'src/constants';
 import { OnJob } from 'src/decorators';
 import {
@@ -227,7 +228,9 @@ export class AssetService extends BaseService {
     const files = [thumbnailFile?.path, previewFile?.path, asset.encodedVideoPath];
 
     if (deleteOnDisk) {
-      files.push(asset.sidecarPath, asset.originalPath);
+      const jsonFile = asset.originalPath + '.json';
+      const textFile = asset.originalPath + '.txt';
+      files.push(asset.sidecarPath, asset.originalPath, jsonFile, textFile);
     }
 
     await this.jobRepository.queue({ name: JobName.DELETE_FILES, data: { files } });

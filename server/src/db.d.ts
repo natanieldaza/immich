@@ -489,3 +489,43 @@ export interface DB {
   'vectors.pg_vector_index_stat': VectorsPgVectorIndexStat;
   version_history: VersionHistory;
 }
+
+export interface DB {
+  person: Person;
+  tags: Tags;
+  exif: Exif;
+  assets: Assets;
+  albums: Albums;
+  albums_shared_users_users: AlbumsSharedUsersUsers;
+  activity: Activity;
+  albums_assets_assets: AlbumsAssetsAssets;
+  api_keys: ApiKeys;
+  asset_faces: AssetFaces;
+  asset_files: AssetFiles;
+  asset_job_status: AssetJobStatus;
+  asset_stack: AssetStack;
+  audit: Audit;
+  face_search: FaceSearch;
+  geodata_places: GeodataPlaces;
+  libraries: Libraries;
+  memories: Memories;
+  memories_assets_assets: MemoriesAssetsAssets;
+  migrations: Migrations;
+  move_history: MoveHistory;
+  naturalearth_countries: NaturalearthCountries;
+  partners: Partners;
+  sessions: Sessions;
+  shared_link__asset: SharedLinkAsset;
+  shared_links: SharedLinks;
+  smart_search: SmartSearch;
+  socket_io_attachments: SocketIoAttachments;
+  system_metadata: SystemMetadata;
+  tag_asset: TagAsset;
+  tags_closure: TagsClosure;
+  typeorm_metadata: TypeormMetadata;
+  user_metadata: UserMetadata;
+  users: Users;
+  vectors_pg_vector_index_stat: VectorsPgVectorIndexStat;
+  version_history: VersionHistory;
+  social_media: SocialMediaEntity; // Add this line
+}

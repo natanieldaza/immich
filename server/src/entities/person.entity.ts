@@ -1,5 +1,7 @@
+import { SocialMediaEntity } from 'src/entities/social-media.entity';
 import { AssetFaceEntity } from 'src/entities/asset-face.entity';
 import { UserEntity } from 'src/entities/user.entity';
+import { PersonRelationshipEntity } from 'src/entities/person-relationship.entity';
 import {
   Check,
   Column,
@@ -13,6 +15,7 @@ import {
 } from 'typeorm';
 
 @Entity('person')
+@Check(`("birthDate" IS NOT NULL AND "age" IS NULL) OR ("birthDate" IS NULL AND "age" IS NOT NULL) OR ("birthDate" IS NULL AND "age" IS NULL)`)
 @Check(`"birthDate" <= CURRENT_DATE`)
 export class PersonEntity {
   @PrimaryGeneratedColumn('uuid')
@@ -40,6 +43,12 @@ export class PersonEntity {
   @Column({ type: 'date', nullable: true })
   birthDate!: string | null;
 
+  @Column({ type: 'numeric', nullable: true })
+  height!: number | null;
+
+  @Column({ type: 'integer', nullable: true })
+  age!: number | null;
+
   @Column({ default: '' })
   thumbnailPath!: string;
 
@@ -60,4 +69,20 @@ export class PersonEntity {
 
   @Column({ type: 'varchar', nullable: true, default: null })
   color?: string | null;
+
+  @OneToMany(() => SocialMediaEntity, (socialMedia) => socialMedia.person, { cascade: true })
+  socialMediaAccounts!: SocialMediaEntity[];
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  country!: string | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  city!: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  description!: string | null;
+
+  @OneToMany(() => PersonRelationshipEntity, (relationship) => relationship.person, { cascade: true })
+  relationships!: PersonRelationshipEntity[];
+
 }

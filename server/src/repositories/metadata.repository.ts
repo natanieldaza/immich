@@ -19,7 +19,9 @@ type TagsWithWrongTypes =
   | 'TagsList'
   | 'Keywords'
   | 'HierarchicalSubject'
-  | 'ISO';
+  | 'ISO'
+  | 'TaggedUserName'
+  | 'TaggedFullName';
 
 export interface ImmichTags extends Omit<Tags, TagsWithWrongTypes> {
   ContentIdentifier?: string;
@@ -37,11 +39,24 @@ export interface ImmichTags extends Omit<Tags, TagsWithWrongTypes> {
   HierarchicalSubject?: StringOrNumber[];
   Keywords?: StringOrNumber | StringOrNumber[];
   ISO?: number | number[];
-
+  TaggedUserName?: StringOrNumber | StringOrNumber[];
+  TaggedFullName?: StringOrNumber;
+  LocationUrl?: string;
+  LocationId?: StringOrNumber;
   // Type is wrong, can also be number.
   Description?: StringOrNumber;
   ImageDescription?: StringOrNumber;
-
+  UserFullName?: StringOrNumber;
+  UserName?: StringOrNumber;
+  UserId?: StringOrNumber;
+  Biography?: StringOrNumber;
+  HighLightTitle?: StringOrNumber;
+  ShortCode?: StringOrNumber;
+  ExternalUrl?: string;
+  Fbid?: StringOrNumber;
+  SubCategorie?: string[];
+  SocialMediaOwnerId?: StringOrNumber;
+  // Type is wrong, can also be number.
   // Extended properties for image regions, such as faces
   RegionInfo?: {
     AppliedToDimensions: {
@@ -62,6 +77,42 @@ export interface ImmichTags extends Omit<Tags, TagsWithWrongTypes> {
       Type?: string;
       Name?: string;
     }[];
+
+    
+  };
+  // tagged people
+  TaggedPeople?: {
+    id?: string | number;
+    TaggedUserName: string;
+    FullName: string;
+  }[];
+  Coauthors?: {
+    id?: string | number;
+    TaggedUserName: string;
+    FullName: string;
+  }[];
+  RelatedProfiles?: {
+    id: string;
+    full_name: string;
+    is_private: boolean;
+    is_verified: boolean;
+    profile_pic_url?: string;
+    username: string;
+  }[];
+  BiographyWithEntities?: {
+    raw_text: string;
+    mentions: string[]; // List of mentioned usernames
+    hashtags: string[]; // List of hashtags
+  };
+  BioLinks?: {
+    title: string;
+    lynx_url: string;
+    url?: string;  // Optional because it's missing in some entries
+    link_type: string;
+  }[];
+  FbProfileBioLink?: {
+    url: string;
+    name: string;
   };
 }
 

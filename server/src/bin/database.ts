@@ -3,6 +3,8 @@ import { DataSource } from 'typeorm';
 
 const { database } = new ConfigRepository().getEnv();
 
+console.log(database.config.typeorm);
+console.log("tesr");
 /**
  * @deprecated - DO NOT USE THIS
  *

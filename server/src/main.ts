@@ -50,7 +50,7 @@ function bootstrapWorker(name: ImmichWorker) {
 function bootstrap() {
   if (immichApp === 'immich-admin') {
     process.title = 'immich_admin_cli';
-    process.env.IMMICH_LOG_LEVEL = LogLevel.WARN;
+    process.env.IMMICH_LOG_LEVEL = LogLevel.DEBUG;
     return CommandFactory.run(ImmichAdminModule);
   }
 

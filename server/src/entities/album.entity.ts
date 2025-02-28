@@ -1,8 +1,3 @@
-import { AlbumUserEntity } from 'src/entities/album-user.entity';
-import { AssetEntity } from 'src/entities/asset.entity';
-import { SharedLinkEntity } from 'src/entities/shared-link.entity';
-import { UserEntity } from 'src/entities/user.entity';
-import { AssetOrder } from 'src/enum';
 import {
   Column,
   CreateDateColumn,
@@ -10,14 +5,23 @@ import {
   Entity,
   Index,
   JoinTable,
-  ManyToMany,
+  ManyToMany,  
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  Tree,
+  TreeChildren,
+  TreeParent,
   UpdateDateColumn,
 } from 'typeorm';
+import { UserEntity } from 'src/entities/user.entity';
+import { AssetEntity } from 'src/entities/asset.entity';
+import { SharedLinkEntity } from 'src/entities/shared-link.entity';
+import { AlbumUserEntity } from 'src/entities/album-user.entity';
+import { AssetOrder } from 'src/enum';
 
 @Entity('albums')
+@Tree('closure-table') // Enables tree structure in TypeORM
 export class AlbumEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -68,4 +72,14 @@ export class AlbumEntity {
 
   @Column({ type: 'varchar', default: AssetOrder.DESC })
   order!: AssetOrder;
+
+  @Column( {type: 'varchar', default: ''})
+  path!: string | null;
+
+  // Tree structure (Nested Albums)
+  @TreeParent()
+  parentAlbum!: AlbumEntity | null;
+
+  @TreeChildren()
+  childAlbums!: AlbumEntity[];
 }

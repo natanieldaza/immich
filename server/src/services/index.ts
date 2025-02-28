@@ -38,6 +38,7 @@ import { UserAdminService } from 'src/services/user-admin.service';
 import { UserService } from 'src/services/user.service';
 import { VersionService } from 'src/services/version.service';
 import { ViewService } from 'src/services/view.service';
+import { SocialMediaService } from 'src/services/social-media.service';
 
 export const services = [
   APIKeyService,
@@ -70,6 +71,7 @@ export const services = [
   StackService,
   StorageService,
   StorageTemplateService,
+  SocialMediaService,
   SyncService,
   SystemConfigService,
   SystemMetadataService,

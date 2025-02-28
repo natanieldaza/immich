@@ -7885,6 +7885,13 @@
             },
             "type": "array"
           },
+          "childAlbums": {
+            "items": {
+              "$ref": "#/components/schemas/AlbumResponseDto"
+            },
+            "nullable": true,
+            "type": "array"
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string"
@@ -7921,6 +7928,14 @@
           },
           "ownerId": {
             "type": "string"
+          },
+          "parentAlbum": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AlbumResponseDto"
+              }
+            ],
+            "nullable": true
           },
           "shared": {
             "type": "boolean"
@@ -9048,6 +9063,10 @@
             "type": "array"
           },
           "description": {
+            "type": "string"
+          },
+          "parentAlbumId": {
+            "format": "uuid",
             "type": "string"
           }
         },
@@ -13220,6 +13239,10 @@
                 "$ref": "#/components/schemas/AssetOrder"
               }
             ]
+          },
+          "parentAlbumId": {
+            "format": "uuid",
+            "type": "string"
           }
         },
         "type": "object"

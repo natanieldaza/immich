@@ -7,6 +7,7 @@ import { Request, Response } from 'express';
 import { RedisOptions } from 'ioredis';
 import { CLS_ID, ClsModuleOptions } from 'nestjs-cls';
 import { OpenTelemetryModuleOptions } from 'nestjs-otel/lib/interfaces';
+import { Console } from 'node:console';
 import { join, resolve } from 'node:path';
 import { parse } from 'pg-connection-string';
 import { Notice } from 'postgres';
@@ -217,6 +218,7 @@ const getEnv = (): EnvData => {
     database: dto.DB_DATABASE_NAME || 'immich',
   } as const;
 
+  
   let parsedOptions: PostgresConnectionConfig = parts;
   if (dto.DB_URL) {
     const parsed = parse(dto.DB_URL);

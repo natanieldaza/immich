@@ -54,6 +54,11 @@ export class CreateAlbumDto {
 
   @ValidateUUID({ optional: true, each: true })
   assetIds?: string[];
+
+  // Parent album ID
+  @ValidateUUID({ optional: true })
+  @Optional()
+  parentAlbumId?: string;
 }
 
 export class UpdateAlbumDto {
@@ -75,6 +80,11 @@ export class UpdateAlbumDto {
   @Optional()
   @ApiProperty({ enum: AssetOrder, enumName: 'AssetOrder' })
   order?: AssetOrder;
+
+  // Parent album ID (optional)
+  @ValidateUUID({ optional: true })
+  @Optional()
+  parentAlbumId?: string;
 }
 
 export class GetAlbumsDto {
@@ -140,7 +150,15 @@ export class AlbumResponseDto {
   @Optional()
   @ApiProperty({ enumName: 'AssetOrder', enum: AssetOrder })
   order?: AssetOrder;
+
+  // Parent and child albums
+  @ApiProperty({ type: AlbumResponseDto, nullable: true })
+  parentAlbum?: AlbumResponseDto | null;
+
+  @ApiProperty({ type: [AlbumResponseDto], nullable: true })
+  childAlbums?: AlbumResponseDto[] | null;
 }
+
 
 export const mapAlbum = (entity: AlbumEntity, withAssets: boolean, auth?: AuthDto): AlbumResponseDto => {
   const sharedUsers: UserResponseDto[] = [];
@@ -189,8 +207,12 @@ export const mapAlbum = (entity: AlbumEntity, withAssets: boolean, auth?: AuthDt
     assetCount: entity.assets?.length || 0,
     isActivityEnabled: entity.isActivityEnabled,
     order: entity.order,
+    parentAlbum: entity.parentAlbum ? mapAlbum(entity.parentAlbum, false, auth) : null,
+    childAlbums: entity.childAlbums?.map((childAlbum) => mapAlbum(childAlbum, withAssets, auth)) || [],
   };
 };
 
+
 export const mapAlbumWithAssets = (entity: AlbumEntity) => mapAlbum(entity, true);
 export const mapAlbumWithoutAssets = (entity: AlbumEntity) => mapAlbum(entity, false);
+

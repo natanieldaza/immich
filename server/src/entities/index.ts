@@ -27,6 +27,7 @@ import { UserAuditEntity } from 'src/entities/user-audit.entity';
 import { UserMetadataEntity } from 'src/entities/user-metadata.entity';
 import { UserEntity } from 'src/entities/user.entity';
 import { VersionHistoryEntity } from 'src/entities/version-history.entity';
+import { SocialMediaEntity } from 'src/entities/social-media.entity';
 
 export const entities = [
   ActivityEntity,
@@ -58,4 +59,5 @@ export const entities = [
   SessionEntity,
   LibraryEntity,
   VersionHistoryEntity,
+  SocialMediaEntity,
 ];
