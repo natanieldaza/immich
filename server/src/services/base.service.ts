@@ -49,6 +49,8 @@ import { VersionHistoryRepository } from 'src/repositories/version-history.repos
 import { ViewRepository } from 'src/repositories/view-repository';
 import { AccessRequest, checkAccess, requireAccess } from 'src/utils/access';
 import { getConfig, updateConfig } from 'src/utils/config';
+import { WebDataRepository } from 'src/repositories/webdata.repository';
+import { WebDataService } from 'src/services/webdata.service';
 
 @Injectable()
 export class BaseService {
@@ -96,6 +98,8 @@ export class BaseService {
     protected userRepository: UserRepository,
     protected versionRepository: VersionHistoryRepository,
     protected viewRepository: ViewRepository,
+    protected webDataRepository: WebDataRepository,
+    protected webDataService: WebDataService,
   ) {
     this.logger.setContext(this.constructor.name);
     this.storageCore = StorageCore.create(

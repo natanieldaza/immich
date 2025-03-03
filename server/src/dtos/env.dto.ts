@@ -187,4 +187,8 @@ export class EnvDto {
   @IsString()
   @Optional()
   REDIS_URL?: string;
+
+  @IsString()
+  @Optional()
+  IMMICH_COOKIES_PATH?: string;
 }

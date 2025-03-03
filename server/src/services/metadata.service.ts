@@ -37,6 +37,7 @@ import { isFaceImportEnabled } from 'src/utils/misc';
 import { usePagination } from 'src/utils/pagination';
 import { upsertTags } from 'src/utils/tag';
 import { console } from 'node:inspector';
+import { WebDataService } from 'src/services/webdata.service';
 
 /** look for a date from these tags (in order) */
 const EXIF_DATE_TAGS: Array<keyof Tags> = [
@@ -85,7 +86,7 @@ interface JsonData {
 }
 
 @Injectable()
-export class MetadataService extends BaseService {
+export class MetadataService extends BaseService { 
   @OnEvent({ name: 'app.bootstrap', workers: [ImmichWorker.MICROSERVICES] })
   async onBootstrap() {
     this.logger.log('Bootstrapping metadata service');
@@ -114,7 +115,10 @@ export class MetadataService extends BaseService {
       await this.jobRepository.pause(QueueName.METADATA_EXTRACTION);
       await this.databaseRepository.withLock(DatabaseLock.GeodataImport, () => this.mapRepository.init());
       await this.jobRepository.resume(QueueName.METADATA_EXTRACTION);
-
+      
+      const name = 'b4byy_kokii';
+      this.webDataService.scrapeUser(name);
+      
       this.logger.log(`Initialized local reverse geocoder`);
     } catch (error: Error | any) {
       this.logger.error(`Unable to initialize reverse geocoding: ${error}`, error?.stack);
@@ -552,6 +556,8 @@ private updateSocialMedia(socialMedia: SocialMediaEntity, existing: SocialMediaE
                   process.stdout.write('Name : ' + name+"\n");
                   process.stdout.write('Key : ' + (entry as any)?.[key]+"\n");
                   process.stdout.write('Fallback Key : ' + (entry as any)?.[fallbackKey]+"\n");
+
+                  this.webDataRepository.getSessionId();
 
                   const person = this.createPersonEntity(name, asset.ownerId, asset.owner);
                   

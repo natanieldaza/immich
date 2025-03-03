@@ -16,6 +16,8 @@ export class StorageService extends BaseService {
   async onBootstrap() {
     const envData = this.configRepository.getEnv();
 
+    
+
     await this.databaseRepository.withLock(DatabaseLock.SystemFileMounts, async () => {
       const flags =
         (await this.systemMetadataRepository.get(SystemMetadataKey.SYSTEM_FLAGS)) ||
@@ -32,6 +34,7 @@ export class StorageService extends BaseService {
       try {
         // check each folder exists and is writable
         for (const folder of Object.values(StorageFolder)) {
+          
           if (!flags.mountChecks[folder]) {
             this.logger.log(`Writing initial mount file for the ${folder} folder`);
             await this.createMountFile(folder);

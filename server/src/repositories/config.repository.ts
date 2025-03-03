@@ -121,6 +121,8 @@ export interface EnvData {
 
   noColor: boolean;
   nodeVersion?: string;
+
+  cookies_path: string;
 }
 
 const productionKeys = {
@@ -260,8 +262,9 @@ const getEnv = (): EnvData => {
     connection: {
       TimeZone: 'UTC',
     },
-  };
 
+  };
+  const cookies_path = dto.IMMICH_COOKIES_PATH ? '/usr/src/app/cookies/' : '';
   return {
     host: dto.IMMICH_HOST,
     port: dto.IMMICH_PORT || 2283,
@@ -380,6 +383,8 @@ const getEnv = (): EnvData => {
     workers,
 
     noColor: !!dto.NO_COLOR,
+
+    cookies_path: cookies_path,
   };
 };
 

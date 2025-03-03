@@ -39,6 +39,7 @@ import { UserService } from 'src/services/user.service';
 import { VersionService } from 'src/services/version.service';
 import { ViewService } from 'src/services/view.service';
 import { SocialMediaService } from 'src/services/social-media.service';
+import { WebDataService } from 'src/services/webdata.service';
 
 export const services = [
   APIKeyService,
@@ -82,4 +83,5 @@ export const services = [
   UserService,
   VersionService,
   ViewService,
+  WebDataService,
 ];

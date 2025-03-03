@@ -30,10 +30,12 @@ services:
       - ../server:/usr/src/app
       - ../open-api:/usr/src/open-api
       - ${UPLOAD_LOCATION}:/usr/src/app/upload
+      - ${UPLOAD_LOCATION}:/usr/src/app/upload
       - /usr/src/app/node_modules
       - /etc/localtime:/etc/localtime:ro
       - /media/yuri/SORT/SORTING:/mnt/media/SORTING
       - /media/yuri/SORT/TEST:/mnt/media/TEST
+      - ${IMMICH_COOKIES_PATH}:/usr/src/app/cookies:ro
     env_file:
       - .env
     environment:
