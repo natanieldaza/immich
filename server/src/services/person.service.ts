@@ -1,11 +1,14 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import fs from 'fs';
 import { Insertable, Updateable } from 'kysely';
+import path from 'path';
 import { JOBS_ASSET_PAGINATION_SIZE } from 'src/constants';
 import { Person } from 'src/database';
 import { AssetFaces, FaceSearch } from 'src/db';
 import { Chunked, OnJob } from 'src/decorators';
 import { BulkIdErrorReason, BulkIdResponseDto } from 'src/dtos/asset-ids.response.dto';
 import { AuthDto } from 'src/dtos/auth.dto';
+import { PersonRelationshipDto } from 'src/dtos/person-relationship.dto';
 import {
   AssetFaceCreateDto,
   AssetFaceDeleteDto,
@@ -13,7 +16,7 @@ import {
   AssetFaceUpdateDto,
   FaceDto,
   mapFaces,
-  mapPerson,
+  mapPersonDb,
   MergePersonDto,
   PeopleResponseDto,
   PeopleUpdateDto,
@@ -21,7 +24,7 @@ import {
   PersonResponseDto,
   PersonSearchDto,
   PersonStatisticsResponseDto,
-  PersonUpdateDto,
+  PersonUpdateDto
 } from 'src/dtos/person.dto';
 import {
   AssetVisibility,
@@ -31,12 +34,13 @@ import {
   Permission,
   PersonPathType,
   QueueName,
+  RelationshipType,
   SourceType,
   SystemMetadataKey,
   VectorIndex,
 } from 'src/enum';
 import { BoundingBox } from 'src/repositories/machine-learning.repository';
-import { UpdateFacesData } from 'src/repositories/person.repository';
+import { SidecarPerson, UpdateFacesData } from 'src/repositories/person.repository';
 import { BaseService } from 'src/services/base.service';
 import { JobItem, JobOf } from 'src/types';
 import { ImmichFileResponse } from 'src/utils/file';
@@ -67,9 +71,12 @@ export class PersonService extends BaseService {
       closestFaceAssetId,
     });
     const { total, hidden } = await this.personRepository.getNumberOfPeople(auth.user.id);
-
+    this.logger.debug(`Found ${items.length} people`);
+    this.logger.debug(`Total people: ${total}`);
+    this.logger.debug(`Hidden people: ${hidden}`);
     return {
-      people: items.map((person) => mapPerson(person)),
+      people: items.map((person) => mapPersonDb(person)),
+    
       hasNextPage,
       total,
       hidden,
@@ -96,7 +103,7 @@ export class PersonService extends BaseService {
         await this.personRepository.reassignFace(face.id, personId);
       }
 
-      result.push(mapPerson(person));
+      result.push(mapPersonDb(person));
     }
     if (changeFeaturePhoto.length > 0) {
       // Remove duplicates
@@ -119,7 +126,7 @@ export class PersonService extends BaseService {
       await this.createNewFeaturePhoto([face.person.id]);
     }
 
-    return await this.findOrFail(personId).then(mapPerson);
+    return await this.findOrFail(personId).then(mapPersonDb);
   }
 
   async getFacesById(auth: AuthDto, dto: FaceDto): Promise<AssetFaceResponseDto[]> {
@@ -148,7 +155,13 @@ export class PersonService extends BaseService {
 
   async getById(auth: AuthDto, id: string): Promise<PersonResponseDto> {
     await this.requireAccess({ auth, permission: Permission.PERSON_READ, ids: [id] });
-    return this.findOrFail(id).then(mapPerson);
+    //return this.findOrFail(id).then(mapPerson);
+
+    const person = await this.personRepository.getPersonResponseDto(id);
+    if (!person) {
+      throw new NotFoundException('Person not found');
+    }
+    return person;
   }
 
   async getStatistics(auth: AuthDto, id: string): Promise<PersonStatisticsResponseDto> {
@@ -159,6 +172,7 @@ export class PersonService extends BaseService {
   async getThumbnail(auth: AuthDto, id: string): Promise<ImmichFileResponse> {
     await this.requireAccess({ auth, permission: Permission.PERSON_READ, ids: [id] });
     const person = await this.personRepository.getById(id);
+    this.logger.debug(`Getting thumbnail for person ${id}`);
     if (!person || !person.thumbnailPath) {
       throw new NotFoundException();
     }
@@ -175,19 +189,20 @@ export class PersonService extends BaseService {
       ownerId: auth.user.id,
       name: dto.name,
       birthDate: dto.birthDate,
+      age: dto.age,
       isHidden: dto.isHidden,
       isFavorite: dto.isFavorite,
       color: dto.color,
     });
 
-    return mapPerson(person);
+    return mapPersonDb(person);
   }
 
   async update(auth: AuthDto, id: string, dto: PersonUpdateDto): Promise<PersonResponseDto> {
     await this.requireAccess({ auth, permission: Permission.PERSON_UPDATE, ids: [id] });
-
-    const { name, birthDate, isHidden, featureFaceAssetId: assetId, isFavorite, color } = dto;
-    // TODO: set by faceId directly
+    this.logger.debug(`Updating person ${id} with ${JSON.stringify(dto)}`);
+    const { name, birthDate, age, isHidden, featureFaceAssetId: assetId, isFavorite, color, description, country, city, height } = dto;
+        // TODO: set by faceId directly
     let faceId: string | undefined = undefined;
     if (assetId) {
       await this.requireAccess({ auth, permission: Permission.ASSET_READ, ids: [assetId] });
@@ -204,16 +219,21 @@ export class PersonService extends BaseService {
       faceAssetId: faceId,
       name,
       birthDate,
+      age,
       isHidden,
       isFavorite,
       color,
+      description,
+      country,
+      city,
+      height,
     });
 
     if (assetId) {
       await this.jobRepository.queue({ name: JobName.GENERATE_PERSON_THUMBNAIL, data: { id } });
     }
 
-    return mapPerson(person);
+    return mapPersonDb(person);
   }
 
   async updateAll(auth: AuthDto, dto: PeopleUpdateDto): Promise<BulkIdResponseDto[]> {
@@ -235,6 +255,35 @@ export class PersonService extends BaseService {
     }
     return results;
   }
+  //  async createRelationship(personId: string, relatedPersonId: string, type: RelationshipType)
+
+  async createRelationship(
+    auth: AuthDto,
+    personId: string,
+    relatedPersonId: string,
+    type: RelationshipType,
+  ): Promise<PersonResponseDto> {
+    await this.requireAccess({ auth, permission: Permission.PERSON_UPDATE, ids: [personId, relatedPersonId] });
+    await this.personRelationshipRepository.createRelationship(personId, relatedPersonId, type);
+    const person = await this.findOrFail(personId);
+    return mapPersonDb(person);
+  }
+
+  async getAllRelationships(auth: AuthDto, id: string): Promise<PersonRelationshipDto[]> {
+    await this.requireAccess({ auth, permission: Permission.PERSON_READ, ids: [id] });
+    const relationships = await this.personRelationshipRepository.getAllRelationships(id);
+    return relationships.map((relationship) => ({
+      ...relationship,
+      relatedPerson: {
+        ...relationship.relatedPerson,
+        id: relationship.relatedPersonId,
+        name: String(relationship.relatedPerson?.name),
+        thumbnailPath: String(relationship.relatedPerson?.thumbnailPath),
+        birthDate: String(relationship.relatedPerson?.birthDate),
+        age: Number(relationship.relatedPerson?.age),
+      },
+    }));
+  }
 
   @Chunked()
   private async delete(people: { id: string; thumbnailPath: string }[]) {
@@ -243,9 +292,120 @@ export class PersonService extends BaseService {
     this.logger.debug(`Deleted ${people.length} people`);
   }
 
+  @OnJob({ name: JobName.QUEUE_PERSON_SIDECAR_WRITE, queue: QueueName.PERSON_SIDECAR })
+  async handleQueuePersonSidecarWrite(job: JobOf<JobName.QUEUE_PERSON_SIDECAR_WRITE>): Promise<JobStatus> {
+    const { force } = job;
+    const directoryToPeople = this.personRepository.getDirectoryToPeople();
+    this.logger.log(`Preparing to queue ${directoryToPeople.size} person sidecar write jobs...`);
+
+    if (directoryToPeople.size === 0) {
+      this.logger.warn("No person sidecars found. Skipping job.");
+      return JobStatus.SKIPPED;
+    }
+
+    for (const [key, personId] of directoryToPeople) {
+      this.logger.verbose(`Processing sidecar for person ${key}`);
+
+
+      try {
+        await this.jobRepository.queue({
+          name: JobName.PERSON_SIDECAR_WRITE,
+          data: { directoryId: key },
+        });
+        this.logger.debug(`Queued job for person ${key} with ID ${personId}`);
+      } catch (error) {
+        this.logger.error(`Failed to queue job for person ${key}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+
+    this.logger.verbose(`Finished queuing person sidecar write jobs.`);
+    return JobStatus.SUCCESS;
+  }
+
+
+  @OnJob({ name: JobName.QUEUE_PERSON_DATA_SCRAPPING, queue: QueueName.PERSON_DATA_SCRAPPING })
+  async handleQueuePersonDataScraping(job: JobOf<JobName.QUEUE_PERSON_DATA_SCRAPPING>): Promise<JobStatus> {
+    try {
+      const { force } = job;
+
+      const peopleSidecars = await this.personRepository.getAllPeopleSidecars();
+
+
+      this.logger.log(`Preparing to queue ${peopleSidecars.length} person data scraping jobs...`);
+
+      if (peopleSidecars.length === 0) {
+        this.logger.warn("No person sidecars found. Skipping job.");
+        return JobStatus.SKIPPED;
+      }
+
+      for (const sidecar of peopleSidecars) {
+        const { id, personId, sidecarPath, updatedAt, lastProcessedAt } = sidecar;
+
+        if (!personId) {
+          this.logger.warn("Encountered a person without a valid ID. Skipping.");
+          continue;
+        }
+
+        if (!sidecarPath) {
+          this.logger.warn(`Missing sidecar path for person ${personId}. Skipping.`);
+          continue;
+        }
+
+        if (!id) {
+          this.logger.warn(`Missing sidecar ID for person ${personId}. Skipping.`);
+          continue;
+        }
+
+        if (
+          lastProcessedAt &&
+          updatedAt &&
+          updatedAt <= lastProcessedAt &&
+          !force
+        ) {
+          this.logger.debug(`Skipping person ${personId} — already processed.`);
+          continue;
+        }
+
+        try {
+          await this.jobRepository.queue({
+            name: JobName.PERSON_DATA_SCRAPPING,
+            data: { personId: id },
+          });
+          this.logger.debug(`Queued job for person ${id}, ${personId} and sidecar ${sidecarPath}`);
+        } catch (error) {
+          this.logger.error(`Failed to queue job for person ${personId}: ${error instanceof Error ? error.message : String(error)}`);
+        }
+      }
+
+      this.logger.log(`Finished queuing person data scraping jobs.`);
+      return JobStatus.SUCCESS;
+    } catch (error) {
+      this.logger.error(`Error processing person data scraping jobs: ${(error as Error).message}`);
+      return JobStatus.FAILED;
+    }
+  }
+
+  @OnJob({ name: JobName.PERSON_DATA_SCRAPPING, queue: QueueName.PERSON_DATA_SCRAPPING })
+  async handlePersonDataScraping(job: JobOf<JobName.PERSON_DATA_SCRAPPING>): Promise<JobStatus> {
+    try {
+      const { personId } = job;
+
+      if (!personId) {
+        this.logger.warn("No person ID provided. Skipping job.");
+        return JobStatus.SKIPPED;
+      }
+
+      await this.processSidecar(personId, false);
+
+      return JobStatus.SUCCESS;
+    } catch (error) {
+      this.logger.error(`Error processing person data scraping job: ${(error as Error).message}`);
+      return JobStatus.FAILED;
+    }
+  }
   @OnJob({ name: JobName.PERSON_CLEANUP, queue: QueueName.BACKGROUND_TASK })
   async handlePersonCleanup(): Promise<JobStatus> {
-    const people = await this.personRepository.getAllWithoutFaces();
+    const people = await this.personRepository.getAllWithoutFacesAndNoSocialMedia();
     await this.delete(people);
     return JobStatus.SUCCESS;
   }
@@ -305,7 +465,7 @@ export class PersonService extends BaseService {
       previewFile.path,
       machineLearning.facialRecognition,
     );
-    this.logger.debug(`${faces.length} faces detected in ${previewFile.path}`);
+    this.logger.verbose(`${faces.length} faces detected in ${previewFile.path}`);
 
     const facesToAdd: (Insertable<AssetFaces> & { id: string })[] = [];
     const embeddings: FaceSearch[] = [];
@@ -579,6 +739,36 @@ export class PersonService extends BaseService {
         if (!primaryPerson.birthDate && mergePerson.birthDate) {
           update.birthDate = mergePerson.birthDate;
         }
+        if (!primaryPerson.age) {
+          update.age = mergePerson.age;
+        }
+
+        if (!primaryPerson.description || primaryPerson.description.trim() === "") {
+          update.description = mergePerson.description?.trim();
+        }
+        else if (!mergePerson.description) {
+          if (!primaryPerson.description.includes(mergePerson.description ?? '')) {
+            update.description = primaryPerson.description + ' ' + mergePerson.description;
+          }
+          else {
+            update.description = primaryPerson.description;
+          }
+        }
+
+        if (!primaryPerson.thumbnailPath || primaryPerson.thumbnailPath.trim() === "") {
+          update.thumbnailPath = mergePerson.thumbnailPath;
+          mergePerson.thumbnailPath = '';
+        }
+        if (!primaryPerson.country || primaryPerson.country.trim() === "") {
+          update.country = mergePerson.country?.trim();
+        }
+        if (!primaryPerson.city || primaryPerson.city.trim() === "") {
+          update.city = mergePerson.city?.trim();
+        }
+        if (!primaryPerson.height || primaryPerson.height === 0) {
+          update.height = mergePerson.height;
+        }
+
 
         if (Object.keys(update).length > 0) {
           primaryPerson = await this.personRepository.update(update);
@@ -589,6 +779,12 @@ export class PersonService extends BaseService {
         this.logger.log(`Merging ${mergeName} into ${primaryName}`);
 
         await this.personRepository.reassignFaces(mergeData);
+        //reassignRelationships
+        await this.personRelationshipRepository.reassignRelationships(primaryPerson.id, mergePerson.id);
+        //reassingSocialMedia
+        await this.socialMediaRepository.reassignSocialMedia(primaryPerson.id, mergePerson.id);
+        //reassignPersonSidecar
+        await this.personRepository.reassignPersonSidecar(primaryPerson.id, mergePerson.id);
         await this.delete([mergePerson]);
 
         this.logger.log(`Merged ${mergeName} into ${primaryName}`);
@@ -634,4 +830,424 @@ export class PersonService extends BaseService {
 
     return dto.force ? this.personRepository.deleteAssetFace(id) : this.personRepository.softDeleteAssetFaces(id);
   }
+
+  @OnJob({ name: JobName.PERSON_SIDECAR_WRITE, queue: QueueName.PERSON_SIDECAR })
+  async handleSidecarWrite(job: JobOf<JobName.PERSON_SIDECAR_WRITE>): Promise<JobStatus> {
+    const { directoryId } = job;
+    this.logger.debug(`Processing PERSON_SIDECAR_WRITE job for personId: ${directoryId}`);
+
+    if (!directoryId) {
+      this.logger.error(`No directoryId provided for PERSON_SIDECAR_WRITE job.`);
+      return JobStatus.FAILED;
+    }
+
+    try {
+      //fetch personId by directoryId
+
+      const personId = this.personRepository.getPersonIdByDirectoryId(directoryId);
+
+      // Fetch people data
+      if (!personId) {
+        this.logger.error(`No personId found for directoryId: ${directoryId}`);
+        return JobStatus.FAILED;
+      }
+
+      job.personId = personId;
+
+      const peopleMap = await this.personRepository.getPeopleByName(personId);
+
+      if (!peopleMap || peopleMap.size === 0) {
+        this.logger.error(`No people data found for personId: ${personId}`);
+        return JobStatus.FAILED;
+      }
+
+      // Extract file path from the "main" key
+      const mainPerson = peopleMap.get('main')?.[0];
+      const filePath = mainPerson?.filePath ?? '';
+
+      if (!filePath) {
+        this.logger.error(`File path missing for personId: ${personId}. Aborting job.`);
+        return JobStatus.FAILED;
+      }
+
+      if (!mainPerson) {
+        this.logger.error(`Main person not found in people map for personId: ${personId}`);
+        return JobStatus.FAILED;
+      }
+
+      // Check if the main person has a valid userId and hashId
+
+      const existingSocialMedia = await this.socialMediaRepository.findByUserIdOrHash(mainPerson.userId, mainPerson.hashId);
+      let mainPersonId = '';
+
+      if (!existingSocialMedia) {
+        this.logger.error(`Main person social media not found for userId=${mainPerson.userId}, hashId=${mainPerson.hashId}`);
+        return JobStatus.FAILED;
+      }
+      let ownerId = '';
+      if (existingSocialMedia.personId) {
+        this.logger.warn(`Main person social media already has a personId ${existingSocialMedia.personId}`);
+        mainPersonId = existingSocialMedia.personId;
+        ownerId = existingSocialMedia.ownerId;
+      }
+      if (!mainPersonId) {
+
+        const personEntity = await this.getPerson(
+          mainPersonId,
+          mainPerson.name ?? '',
+          mainPerson.ownerId,
+          mainPerson.description ?? '',
+        );
+        this.logger.debug(`Person entity: ${JSON.stringify(personEntity)}`);
+        if (!personEntity) {
+          this.logger.error(`Main person entity not found for personId: ${mainPersonId}`);
+          return JobStatus.FAILED;
+        }
+
+        mainPersonId = String(personEntity.id);
+        ownerId = String(personEntity.ownerId);
+      }
+      this.logger.debug(`Main personId: ${mainPersonId}`);
+
+      // Ensure the directory exists
+      const directoryPath = path.dirname(filePath);
+      if (!fs.existsSync(directoryPath)) {
+        fs.mkdirSync(directoryPath, { recursive: true });
+      }
+
+      const finalFilePath = path.join(directoryPath, 'PersonData.json');
+
+      // Read existing data if file exists
+      let existingData: Map<string, SidecarPerson[]> = new Map();
+
+      if (fs.existsSync(finalFilePath)) {
+        try {
+          const parsedData = JSON.parse(fs.readFileSync(finalFilePath, 'utf8'));
+          existingData = new Map(Object.entries(parsedData));
+        } catch (error) {
+          this.logger.error(`Failed to read or parse existing PersonData.json at ${finalFilePath}:`, error);
+          return JobStatus.FAILED;
+        }
+      }
+
+      
+      this.logger.debug(`OwnerId: ${ownerId}`);
+      for (const [key, personList] of peopleMap.entries()) {
+        let category = key;
+        if (!['main', 'owner', 'social_media'].includes(category)) {
+          category = 'related';
+        }
+
+        const existingList = existingData.get(category) ?? [];
+
+        for (const newPerson of personList) {
+          const existingPerson = existingList.find(p => p.userId === newPerson.userId);
+
+          if (!existingPerson) {
+            if (category === 'main') {
+              newPerson.id = mainPersonId;
+              this.logger.debug(`Main personId: ${mainPersonId} with ownerId: ${ownerId} changed from ${newPerson.ownerId}`);
+              newPerson.ownerId = ownerId;
+            }
+            existingList.push(newPerson);
+          } else {
+            existingPerson.ownerId = ownerId;
+            if (newPerson.relationType && !existingPerson.relationType?.includes(newPerson.relationType)) {
+              existingPerson.relationType = existingPerson.relationType
+                ? `${existingPerson.relationType}, ${newPerson.relationType}`
+                : newPerson.relationType;
+            }
+          }
+          
+        }
+
+        existingData.set(category, existingList);
+      }
+      // Write the merged data to the file
+      const jsonData = Object.fromEntries(existingData);
+      fs.writeFileSync(finalFilePath, JSON.stringify(jsonData, null, 2));
+
+      this.logger.debug(`PersonData.json updated successfully for personId: ${personId} at ${finalFilePath} (mainPersonId: ${mainPersonId})`);
+
+      // Update the database entry with the last modified date
+      const lastModified = new Date(fs.statSync(finalFilePath).mtime);
+
+      const sidecarModified = await this.personRepository.addOrUpdatePersonSidecar(
+        mainPersonId,
+        finalFilePath,
+        null,
+        lastModified,
+        ownerId,
+      );
+      job.personId = mainPersonId
+      this.logger.verbose(`Sidecar update result: ${JSON.stringify(sidecarModified)}`);
+    } catch (error) {
+      this.logger.error(`Error processing PERSON_SIDECAR_WRITE job for personId ${job.personId}:`, error);
+      return JobStatus.FAILED;
+    }
+
+    return JobStatus.SUCCESS;
+  }
+
+
+  private async updateSidecar(sidecar: Map<string, SidecarPerson[]>, filePath: string): Promise<boolean> {
+    try {
+      // Read and parse the existing file, which is a grouped object
+      const existingDataRaw = fs.readFileSync(filePath, 'utf8');
+      const existingData: Record<string, SidecarPerson[]> = JSON.parse(existingDataRaw);
+
+      // Merge updates from the new sidecar Map
+      for (const [group, people] of sidecar.entries()) {
+        if (!existingData[group]) {
+          existingData[group] = [];
+        }
+
+        for (const newPerson of people) {
+          const existingPerson = existingData[group].find(p => p.userId === newPerson.userId);
+
+          if (!existingPerson) {
+            existingData[group].push(newPerson);
+          } else {
+            if (!existingPerson.id && newPerson.id) {
+              existingPerson.id = newPerson.id;
+            }
+            if (!existingPerson.name && newPerson.name) {
+              existingPerson.name = newPerson.name;
+            }
+            if (!existingPerson.description && newPerson.description) {
+              existingPerson.description = newPerson.description;
+            }
+          }
+        }
+      }
+
+      // Write back grouped data
+      fs.writeFileSync(filePath, JSON.stringify(existingData, null, 2), 'utf-8');
+      this.logger.verbose(`Sidecar file updated successfully at ${filePath}`);
+
+
+      return true;
+    } catch (error) {
+      this.logger.error(`Error updating sidecar file at ${filePath}:`, error);
+      return false;
+    }
+  }
+
+  private async getPerson(id: string, name: string, ownerId: string, description: string): Promise<PersonResponseDto> {
+
+
+    const person = id ? await this.personRepository.getById(id) : null;
+    if (!person) {
+      const newperson = {
+      name,
+      ownerId,
+      description,
+      isFavorite: false,
+      isHidden: false,
+      age: null,
+      birthDate: null,
+      color: null,
+      faceAssetId: null,
+      thumbnailPath: '',
+      }
+      return mapPersonDb(await this.personRepository.create(newperson));
+    }
+    else {
+      return mapPersonDb(person)
+    }
+  }
+
+
+  private async processSidecar(id: string, force: boolean): Promise<JobStatus> {
+    this.logger.debug(`Processing sidecar for person ${id}`);
+    const sidecar = await this.personRepository.getPersonSidecarByPersonId(id);
+
+    this.logger.verbose(`Sidecar data: ${JSON.stringify(sidecar)}`);
+    if (!sidecar || sidecar.length === 0) {
+      this.logger.error(`Sidecar not found for person ${id}`);
+      return JobStatus.FAILED;
+    }
+
+    const filePath = sidecar[0].sidecarPath;
+    if (!filePath) {
+      this.logger.error(`File path missing for sidecar ${id}. Aborting job.`);
+      return JobStatus.FAILED;
+    }
+
+    if (!force && sidecar[0].lastProcessedAt && sidecar[0].lastProcessedAt > sidecar[0].updatedAt) {
+      this.logger.verbose(`Sidecar ${id} has already been processed and is up to date. Skipping.`);
+      return JobStatus.SKIPPED;
+    }
+
+    let sidecarData: Map<string, SidecarPerson[]> = new Map();
+
+    this.logger.verbose(`Processing sidecar file: ${filePath}`);
+
+    try {
+      const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      sidecarData = new Map(Object.entries(parsed));
+    } catch (error) {
+      this.logger.error(`Failed to read or parse sidecar file ${filePath}:`, error);
+      return JobStatus.FAILED;
+    }
+
+    if (!sidecarData || sidecarData.size === 0) {
+      this.logger.error(`No data found in sidecar file ${filePath}`);
+      return JobStatus.FAILED;
+    }
+
+    this.logger.verbose(`Processing sidecar data for ${sidecarData.size} groups`);
+
+    let mainPersonId: string;
+    const relations = new Map<string, RelationshipType>();
+
+    const mainPerson = sidecarData.get('main')?.[0];
+    if (!mainPerson) {
+      this.logger.error(`Main person not found in sidecar data`);
+      return JobStatus.FAILED;
+    }
+
+    const existingSocialMedia = await this.socialMediaRepository.findByUserIdOrHash(mainPerson.userId, mainPerson.hashId);
+
+    if (existingSocialMedia === undefined || existingSocialMedia === null) {
+      this.logger.error(`Main person social media not found for userId=${mainPerson.userId}, hashId=${mainPerson.hashId}`);
+      return JobStatus.FAILED;
+    } else {
+      if (existingSocialMedia.personId) {
+        this.logger.warn(`Main person social media already has a personId ${existingSocialMedia.personId}`);
+      }
+    }
+
+    mainPersonId = existingSocialMedia.personId ?? '';
+    const personEntity = await this.getPerson(mainPersonId ?? '', mainPerson.name ?? '', sidecar[0].ownerId, mainPerson.description ?? '');
+
+    if (!personEntity) {
+      this.logger.error(`Main person entity not found`);
+      return JobStatus.FAILED;
+    }
+
+    existingSocialMedia.personId = String(personEntity.id);
+    await this.socialMediaRepository.update(existingSocialMedia);
+
+    
+
+    mainPersonId =String( personEntity.id);
+    mainPerson.id = mainPersonId;
+    sidecarData.set('main', [mainPerson]);
+
+    const ownerPerson = sidecarData.get('owner')?.[0];
+    if (ownerPerson) {
+      const existingOwnerSocialMedia = await this.socialMediaRepository.findByUserIdOrHash(ownerPerson.userId, ownerPerson.hashId);
+      if (existingOwnerSocialMedia) {
+        const ownerPersonEntity = await this.getPerson(ownerPerson.id ?? existingOwnerSocialMedia.personId, ownerPerson.name ?? '', sidecar[0].ownerId, ownerPerson.description ?? '');
+        if (!ownerPersonEntity) {
+          this.logger.error(`Owner person entity not found`);
+          return JobStatus.FAILED;
+        }
+        existingOwnerSocialMedia.personId = String(ownerPersonEntity.id);
+        await this.socialMediaRepository.update(existingOwnerSocialMedia);
+        ownerPerson.id = String(ownerPersonEntity.id);
+        sidecarData.set('owner', [ownerPerson]);
+        relations.set(String(ownerPersonEntity.id), RelationshipType.FRIEND);
+      }
+    }
+
+    const relatedPeople: SidecarPerson[] = [];
+    const isEmpty = (val?: string | null) => val === null || val === undefined || val === '';
+
+    for (const person of sidecarData.get('related') ?? []) {
+      const existingSocialMedia = await this.socialMediaRepository.findByUserIdOrHash(person.userId, person.hashId);
+      if (!existingSocialMedia) continue;
+
+      const personEntityName = isEmpty(person.name)
+        ? [person.platform, person.hashId, person.userId].filter(Boolean).join('_').toLowerCase()
+        : person.name;
+
+      const relatedPersonEntity = await this.getPerson(
+        existingSocialMedia.personId ?? '',
+        personEntityName ?? '',
+        sidecar[0].ownerId,
+        person.description ?? '',
+      );
+
+      existingSocialMedia.personId = String(relatedPersonEntity.id);
+      await this.socialMediaRepository.update(existingSocialMedia);
+
+      person.id = String(relatedPersonEntity.id);
+      relatedPeople.push(person);
+
+      let relationType = RelationshipType.ACQUAINTANCE;
+      if (
+        person.relationType?.includes('tagged') ||
+        person.relationType?.includes('coauthor') ||
+        person.relationType?.includes('mentions') ||
+        person.relationType?.includes('owner')
+      ) {
+        relationType = RelationshipType.FRIEND;
+      }
+      relations.set(String(relatedPersonEntity.id), relationType);
+    }
+
+    if (relatedPeople.length > 0) {
+      sidecarData.set('related', relatedPeople);
+    }
+
+    const socialMediaList = sidecarData.get('social_media') ?? [];
+
+    const updatedSocialMediaList: SidecarPerson[] = [];
+
+    for (const socialMedia of socialMediaList) {
+      let existingSocialMedia = await this.socialMediaRepository.findByUserIdOrHash(socialMedia.userId, socialMedia.hashId);
+      if (!existingSocialMedia)
+        existingSocialMedia = await this.socialMediaRepository.findbyName(socialMedia.name ?? '');
+
+      if (!existingSocialMedia) continue;
+
+      existingSocialMedia.personId = mainPersonId;
+      await this.socialMediaRepository.update(existingSocialMedia);
+
+      socialMedia.id = mainPersonId;
+      updatedSocialMediaList.push(socialMedia);
+    }
+
+    if (updatedSocialMediaList.length > 0) {
+      sidecarData.set('social_media', updatedSocialMediaList);
+    }
+
+    for (const [relatedPersonId, relationType] of relations) {
+      if (mainPersonId === relatedPersonId) continue;
+      await this.personRelationshipRepository.createRelationship(mainPersonId, relatedPersonId, relationType);
+    }
+    this.logger.debug(`Sidecar data processed successfully for personId: ${id}`);
+    await this.updateSidecar(sidecarData, filePath);
+    await this.personRepository.addOrUpdatePersonSidecar(
+      mainPersonId,
+      filePath,
+      new Date(),
+      null,
+      mainPerson.ownerId,
+    );
+
+    return JobStatus.SUCCESS;
+  }
+
+
+
+
+
+
+  @OnJob({ name: JobName.PERSON_SIDECAR_SYNC, queue: QueueName.PERSON_SIDECAR })
+  async handleSidecarSync({ personId }: JobOf<JobName.PERSON_SIDECAR_SYNC>): Promise<JobStatus> {
+    return this.processSidecar(String(personId), false);
+
+  }
+
+  @OnJob({ name: JobName.PERSON_SIDECAR_DISCOVERY, queue: QueueName.PERSON_SIDECAR })
+  async handleSidecarDiscovery({ personId }: JobOf<JobName.PERSON_SIDECAR_DISCOVERY>): Promise<JobStatus> {
+    return this.processSidecar(String(personId), true);
+  }
+
+
+
+
 }

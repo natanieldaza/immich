@@ -50,4 +50,19 @@ export class PersonTable {
 
   @UpdateIdColumn({ indexName: 'IDX_person_update_id' })
   updateId!: string;
+
+  @Column({ type: 'integer', nullable: true })
+  height!: number | null;
+
+  @Column({ type: 'integer', nullable: true })
+  age!: number | null;  
+
+  @Column({ default: '', nullable: true })
+  country!: string | null;
+
+  @Column({ default: '', nullable: true })
+  city!: string | null;
+
+  @Column({ default: '', nullable: true })
+  description!: string | null;
 }

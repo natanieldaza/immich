@@ -90,6 +90,15 @@ export class JobService extends BaseService {
     await this.jobRepository.queue(asJobItem(dto));
   }
 
+  async stopAll(): Promise<void> {
+    this.logger.debug(`Stopping all queues`);
+    for (const queueName of Object.values(QueueName)) {
+      this.logger.debug(`Stopping queue: ${queueName}`);
+      await this.jobRepository.stop(queueName);
+    }
+    this.logger.debug(`All queues stopped`);
+  }
+  
   async handleCommand(queueName: QueueName, dto: JobCommandDto): Promise<JobStatusDto> {
     this.logger.debug(`Handling command: queue=${queueName},command=${dto.command},force=${dto.force}`);
 
@@ -111,6 +120,11 @@ export class JobService extends BaseService {
 
       case JobCommand.EMPTY: {
         await this.jobRepository.empty(queueName);
+        break;
+      }
+
+      case JobCommand.STOP: {
+        await this.jobRepository.stop(queueName);
         break;
       }
 
@@ -146,7 +160,7 @@ export class JobService extends BaseService {
     if (isActive) {
       throw new BadRequestException(`Job is already running`);
     }
-
+    this.logger.debug(`start Starting job: ${name}`);
     this.telemetryRepository.jobs.addToCounter(`immich.queues.${snakeCase(name)}.started`, 1);
 
     switch (name) {
@@ -198,6 +212,30 @@ export class JobService extends BaseService {
         return this.jobRepository.queue({ name: JobName.BACKUP_DATABASE, data: { force } });
       }
 
+      //ADD OTHER QUESS HERE
+
+      case QueueName.PERSON_DATA_SCRAPPING: {
+
+        return this.jobRepository.queue({ name: JobName.QUEUE_PERSON_DATA_SCRAPPING, data: { force } });
+      }
+
+      /*case QueueName.PERSON_SIDECAR_DISCOVERY: {
+        return this.jobRepository.queue({ name: JobName.PERSON_SIDECAR_DISCOVERY, data: { force } });
+      }*/
+
+      case QueueName.SOCIAL_MEDIA_DATA_SCRAPPING: {
+        return this.jobRepository.queue({ name: JobName.QUEUE_SOCIAL_MEDIA_DATA_SCRAPPING, data: { force } });
+      }
+
+      case QueueName.SOCIAL_MEDIA_DATA_SCRAPPING_WEB: {
+        return this.jobRepository.queue({ name: JobName.QUEUE_SOCIAL_MEDIA_DATA_SCRAPPING_WEB, data: { force } });
+      }
+
+      case QueueName.LOCATION_DATA_SCRAPPING_WEB: {
+        return this.jobRepository.queue({ name: JobName.QUEUE_LOCATION_DATA_SCRAPPING_WEB, data: { force } });
+        break;
+      }
+
       default: {
         throw new BadRequestException(`Invalid job name: ${name}`);
       }
@@ -215,6 +253,9 @@ export class JobService extends BaseService {
       if (status === JobStatus.SUCCESS || status == JobStatus.SKIPPED) {
         await this.onDone(job);
       }
+      else {
+        await this.handleJob(job);
+      }
     } catch (error: Error | any) {
       await this.eventRepository.emit('job.failed', { job, error });
     } finally {
@@ -228,6 +269,10 @@ export class JobService extends BaseService {
       QueueName.STORAGE_TEMPLATE_MIGRATION,
       QueueName.DUPLICATE_DETECTION,
       QueueName.BACKUP_DATABASE,
+      QueueName.PERSON_DATA_SCRAPPING,
+      QueueName.SOCIAL_MEDIA_DATA_SCRAPPING,
+      QueueName.SOCIAL_MEDIA_DATA_SCRAPPING_WEB,
+      QueueName.LOCATION_DATA_SCRAPPING_WEB
     ].includes(name);
   }
 
@@ -244,6 +289,21 @@ export class JobService extends BaseService {
       { name: JobName.QUEUE_FACIAL_RECOGNITION, data: { force: false, nightly: true } },
       { name: JobName.CLEAN_OLD_SESSION_TOKENS },
     ]);
+  }
+  private async handleJob(item: JobItem) {
+    
+    switch (item.name) {
+      case JobName.METADATA_EXTRACTION: {
+        
+        await this.jobRepository.decrementPendingSidecarCount(String(item.data.directoryId));
+        if (await this.jobRepository.getPendingSidecarCount(String(item.data.directoryId)) === 0) {
+          this.logger.debug(`handleJobError All sidecar files processed for ${item.data.directoryId}`);
+          await this.jobRepository.queue({ name: JobName.PERSON_SIDECAR_WRITE, data: { directoryId: item.data.directoryId } });
+
+        }
+        break
+      }
+    }
   }
 
   /**
@@ -264,7 +324,25 @@ export class JobService extends BaseService {
         });
         break;
       }
+      case JobName.METADATA_EXTRACTION: {
 
+        await this.jobRepository.decrementPendingSidecarCount(String(item.data.directoryId));
+        const itemsLeft = await this.jobRepository.getPendingSidecarCount(String(item.data.directoryId));
+        if (itemsLeft <= 0) {
+          this.logger.debug(`All sidecar files processed for ${item.data.directoryId} - queueing sidecar write `);
+          await this.jobRepository.queue({ name: JobName.PERSON_SIDECAR_WRITE, data: { directoryId: item.data.directoryId } });
+        }
+
+       /* if (item.data.source === 'sidecar-write') {
+          const [asset] = await this.assetRepository.getByIdsWithAllRelations([item.data.id]);
+          if (asset) {
+            this.eventRepository.clientSend('on_asset_update', asset.ownerId, mapAsset(asset));
+          }
+        }
+        await this.jobRepository.queue({ name: JobName.STORAGE_TEMPLATE_MIGRATION_SINGLE, data: item.data });*/
+
+        break;
+      }
       case JobName.STORAGE_TEMPLATE_MIGRATION_SINGLE: {
         if (item.data.source === 'upload' || item.data.source === 'copy') {
           await this.jobRepository.queue({ name: JobName.GENERATE_THUMBNAILS, data: item.data });
@@ -318,6 +396,18 @@ export class JobService extends BaseService {
 
       case JobName.USER_DELETION: {
         this.eventRepository.clientBroadcast('on_user_delete', item.data.id);
+        break;
+      }
+    
+      case JobName.PERSON_SIDECAR_DISCOVERY:
+      case JobName.PERSON_SIDECAR_SYNC: {
+        //await this.jobRepository.queue({ name: JobName.PERSON_CLEANUP, data: item.data });
+        break;
+      }
+      case JobName.PERSON_SIDECAR_WRITE: {
+        this.logger.verbose(`Person sidecar write job done`);
+        this.logger.verbose(`Processing sidecar for person ${item.data}`);
+        await this.jobRepository.queue({ name: JobName.PERSON_SIDECAR_DISCOVERY, data: item.data });
         break;
       }
     }

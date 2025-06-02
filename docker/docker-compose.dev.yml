@@ -25,14 +25,17 @@ services:
       context: ../
       dockerfile: server/Dockerfile
       target: dev
-    restart: unless-stopped
+    restart: always
     volumes:
       - ../server:/usr/src/app
       - ../open-api:/usr/src/open-api
-      - ${UPLOAD_LOCATION}/photos:/usr/src/app/upload
-      - ${UPLOAD_LOCATION}/photos/upload:/usr/src/app/upload/upload
+      - ${UPLOAD_LOCATION}:/usr/src/app/upload
+      - ${UPLOAD_LOCATION}:/usr/src/app/upload
       - /usr/src/app/node_modules
       - /etc/localtime:/etc/localtime:ro
+      - /media/yuri/SORT/SORTING:/mnt/media/SORTING
+      - /media/yuri/SORT/TEST:/mnt/media/TEST
+      - ${IMMICH_COOKIES_PATH}:/usr/src/app/cookies:ro
     env_file:
       - .env
     environment:
@@ -48,7 +51,7 @@ services:
       IMMICH_THIRD_PARTY_SOURCE_URL: https://github.com/immich-app/immich/
       IMMICH_THIRD_PARTY_BUG_FEATURE_URL: https://github.com/immich-app/immich/issues
       IMMICH_THIRD_PARTY_DOCUMENTATION_URL: https://immich.app/docs
-      IMMICH_THIRD_PARTY_SUPPORT_URL: https://immich.app/docs/community-guides
+      IMMICH_THIRD_PARTY_SUPPORT_URL: https://immich.app/docs/third-party
     ulimits:
       nofile:
         soft: 1048576
@@ -122,7 +125,7 @@ services:
 
   database:
     container_name: immich_postgres
-    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.1-pgvectors0.2.0
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.3.0-pgvectors0.2.0
     env_file:
       - .env
     environment:
@@ -131,9 +134,10 @@ services:
       POSTGRES_DB: ${DB_DATABASE_NAME}
       POSTGRES_INITDB_ARGS: '--data-checksums'
     volumes:
-      - ${UPLOAD_LOCATION}/postgres:/var/lib/postgresql/data
+      - ${DB_DATA_LOCATION}:/var/lib/postgresql/data
     ports:
       - 5432:5432
+
   # set IMMICH_TELEMETRY_INCLUDE=all in .env to enable metrics
   # immich-prometheus:
   #   container_name: immich_prometheus
@@ -154,8 +158,22 @@ services:
   #   image: grafana/grafana:10.3.3-ubuntu
   #   volumes:
   #     - grafana-data:/var/lib/grafana
+  pgadmin:
+    container_name: immich_pgadmin
+    image: dpage/pgadmin4
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - database
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
 
 volumes:
   model-cache:
   prometheus-data:
   grafana-data:
+  pgadmin_data:

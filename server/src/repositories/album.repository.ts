@@ -6,7 +6,7 @@ import { columns, Exif } from 'src/database';
 import { Albums, DB } from 'src/db';
 import { Chunked, ChunkedArray, ChunkedSet, DummyValue, GenerateSql } from 'src/decorators';
 import { AlbumUserCreateDto } from 'src/dtos/album.dto';
-import { withDefaultVisibility } from 'src/utils/database';
+import { asUuid, withDefaultVisibility } from 'src/utils/database';
 
 export interface AlbumAssetCount {
   albumId: string;
@@ -221,6 +221,14 @@ export class AlbumRepository {
 
   async deleteAll(userId: string): Promise<void> {
     await this.db.deleteFrom('albums').where('ownerId', '=', userId).execute();
+  }
+
+  async setViewed(id:string): Promise<void> {
+    await this.db
+      .updateTable('albums')
+      .set({ viewed: true })
+      .where('id', '=', asUuid(id))
+      .execute();
   }
 
   @GenerateSql({ params: [[DummyValue.UUID]] })

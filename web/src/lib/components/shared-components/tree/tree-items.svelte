@@ -7,11 +7,22 @@
     parent?: string;
     active?: string;
     icons: { default: string; active: string };
+    isMenu: boolean;
+    currentPath: string;
     getLink: (path: string) => string;
     getColor?: (path: string) => string | undefined;
   }
 
-  let { items, parent = '', active = '', icons, getLink, getColor = () => undefined }: Props = $props();
+  let {
+    items,
+    parent = '',
+    active = '',
+    icons,
+    getLink,
+    getColor = () => undefined,
+    isMenu = false,
+    currentPath = '',
+  }: Props = $props();
 </script>
 
 <ul class="list-none ms-2">
@@ -21,7 +32,7 @@
     {@const key = value + getColor(value)}
     {#key key}
       <li>
-        <Tree {parent} value={path} {tree} {icons} {active} {getLink} {getColor} />
+        <Tree {parent} value={path} {tree} {icons} {active} {getLink} {getColor} {isMenu} {currentPath} />
       </li>
     {/key}
   {/each}

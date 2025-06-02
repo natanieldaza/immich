@@ -1,4 +1,4 @@
-import { asset_face_source_type, asset_visibility_enum, assets_status_enum } from 'src/schema/enums';
+import { asset_face_source_type, asset_visibility_enum, assets_status_enum, directy_status_enum, relation_type_enum } from 'src/schema/enums';
 import {
   album_user_after_insert,
   album_users_delete_audit,
@@ -23,8 +23,12 @@ import { AssetAuditTable } from 'src/schema/tables/asset-audit.table';
 import { AssetFaceTable } from 'src/schema/tables/asset-face.table';
 import { AssetFileTable } from 'src/schema/tables/asset-files.table';
 import { AssetJobStatusTable } from 'src/schema/tables/asset-job-status.table';
+import { AssetPersonTable } from 'src/schema/tables/asset-person.table';
+import { AssetWebLocationTable } from 'src/schema/tables/asset-web-location.table';
 import { AssetTable } from 'src/schema/tables/asset.table';
 import { AuditTable } from 'src/schema/tables/audit.table';
+import { DirectoryJobStatusTable } from 'src/schema/tables/directory-job-status.table';
+import { DirectoryTable } from 'src/schema/tables/directory.table';
 import { ExifTable } from 'src/schema/tables/exif.table';
 import { FaceSearchTable } from 'src/schema/tables/face-search.table';
 import { GeodataPlacesTable } from 'src/schema/tables/geodata-places.table';
@@ -36,11 +40,15 @@ import { NaturalEarthCountriesTable } from 'src/schema/tables/natural-earth-coun
 import { NotificationTable } from 'src/schema/tables/notification.table';
 import { PartnerAuditTable } from 'src/schema/tables/partner-audit.table';
 import { PartnerTable } from 'src/schema/tables/partner.table';
+import { PersonRelationshipTable } from 'src/schema/tables/person-relationship.table';
+import { PersonSidecarTable } from 'src/schema/tables/person-sidecar.table';
 import { PersonTable } from 'src/schema/tables/person.table';
 import { SessionTable } from 'src/schema/tables/session.table';
 import { SharedLinkAssetTable } from 'src/schema/tables/shared-link-asset.table';
 import { SharedLinkTable } from 'src/schema/tables/shared-link.table';
+import { SitesUrlTable } from 'src/schema/tables/sites-url.table';
 import { SmartSearchTable } from 'src/schema/tables/smart-search.table';
+import { SocialMediaTable } from 'src/schema/tables/social-media.table';
 import { StackTable } from 'src/schema/tables/stack.table';
 import { SessionSyncCheckpointTable } from 'src/schema/tables/sync-checkpoint.table';
 import { SystemMetadataTable } from 'src/schema/tables/system-metadata.table';
@@ -50,6 +58,8 @@ import { UserAuditTable } from 'src/schema/tables/user-audit.table';
 import { UserMetadataTable } from 'src/schema/tables/user-metadata.table';
 import { UserTable } from 'src/schema/tables/user.table';
 import { VersionHistoryTable } from 'src/schema/tables/version-history.table';
+import { WebScrappedLocationsTmpTable } from 'src/schema/tables/web-scrapped-locations-tmp.table';
+import { WebScrappedLocationsTable } from 'src/schema/tables/web-scrapped-locations.table';
 import { Database, Extensions } from 'src/sql-tools';
 
 @Extensions(['uuid-ossp', 'unaccent', 'cube', 'earthdistance', 'pg_trgm', 'plpgsql'])
@@ -66,9 +76,13 @@ export class ImmichDatabase {
     AssetAuditTable,
     AssetFaceTable,
     AssetJobStatusTable,
+    AssetWebLocationTable,
     AssetTable,
     AssetFileTable,
+    AssetPersonTable,
     AuditTable,
+    DirectoryTable,
+    DirectoryJobStatusTable,
     ExifTable,
     FaceSearchTable,
     GeodataPlacesTable,
@@ -81,10 +95,14 @@ export class ImmichDatabase {
     PartnerAuditTable,
     PartnerTable,
     PersonTable,
+    PersonRelationshipTable,
+    PersonSidecarTable,
     SessionTable,
+    SitesUrlTable,
     SharedLinkAssetTable,
     SharedLinkTable,
     SmartSearchTable,
+    SocialMediaTable,
     StackTable,
     SessionSyncCheckpointTable,
     SystemMetadataTable,
@@ -94,6 +112,8 @@ export class ImmichDatabase {
     UserMetadataTable,
     UserTable,
     VersionHistoryTable,
+    WebScrappedLocationsTable,
+    WebScrappedLocationsTmpTable,
   ];
 
   functions = [
@@ -110,5 +130,5 @@ export class ImmichDatabase {
     album_users_delete_audit,
   ];
 
-  enum = [assets_status_enum, asset_face_source_type, asset_visibility_enum];
+  enum = [assets_status_enum, asset_face_source_type, asset_visibility_enum, directy_status_enum, relation_type_enum];
 }

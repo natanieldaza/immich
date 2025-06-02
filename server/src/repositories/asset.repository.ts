@@ -418,6 +418,15 @@ export class AssetRepository {
     await this.db.updateTable('assets').set(options).where('libraryId', '=', asUuid(libraryId)).execute();
   }
 
+  async setViewed(id:string): Promise<void> {
+    await this.db
+      .updateTable('assets')
+      .set({ viewed: true })
+      .where('id', '=', asUuid(id))
+      .execute();
+  }
+
+
   @GenerateSql({
     params: [{ targetDuplicateId: DummyValue.UUID, duplicateIds: [DummyValue.UUID], assetIds: [DummyValue.UUID] }],
   })

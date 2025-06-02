@@ -142,4 +142,7 @@ export class AssetTable {
 
   @Column({ enum: asset_visibility_enum, default: AssetVisibility.TIMELINE })
   visibility!: AssetVisibility;
+
+  @Column({ type: 'boolean', default: false })
+  viewed!: boolean;
 }

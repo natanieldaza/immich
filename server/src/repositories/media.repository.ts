@@ -20,10 +20,17 @@ import {
 } from 'src/types';
 import { handlePromiseError } from 'src/utils/misc';
 
-const probe = (input: string, options: string[]): Promise<FfprobeData> =>
-  new Promise((resolve, reject) =>
-    ffmpeg.ffprobe(input, options, (error, data) => (error ? reject(error) : resolve(data))),
-  );
+const probe = (input: string, options: string[] = []): Promise<FfprobeData> =>
+  new Promise((resolve, reject) => {
+    ffmpeg.ffprobe(input, options, (error, data) => {
+      if (error) {
+        const message = `FFprobe failed for "${input}": ${error.message}`;
+        reject(new Error(message));
+      } else {
+        resolve(data);
+      }
+    });
+  });
 sharp.concurrency(0);
 sharp.cache({ files: 0 });
 
@@ -180,37 +187,53 @@ export class MediaRepository {
   }
 
   async probe(input: string, options?: ProbeOptions): Promise<VideoInfo> {
-    const results = await probe(input, options?.countFrames ? ['-count_packets'] : []); // gets frame count quickly: https://stackoverflow.com/a/28376817
+
+    try {
+      const results = await probe(input, options?.countFrames ? ['-count_packets'] : []); // gets frame count quickly: https://stackoverflow.com/a/28376817
+      return {
+        format: {
+          formatName: results.format.format_name,
+          formatLongName: results.format.format_long_name,
+          duration: this.parseFloat(results.format.duration),
+          bitrate: this.parseInt(results.format.bit_rate),
+        },
+        videoStreams: results.streams
+          .filter((stream) => stream.codec_type === 'video')
+          .filter((stream) => !stream.disposition?.attached_pic)
+          .map((stream) => ({
+            index: stream.index,
+            height: this.parseInt(stream.height),
+            width: this.parseInt(stream.width),
+            codecName: stream.codec_name === 'h265' ? 'hevc' : stream.codec_name,
+            codecType: stream.codec_type,
+            frameCount: this.parseInt(options?.countFrames ? stream.nb_read_packets : stream.nb_frames),
+            rotation: this.parseInt(stream.rotation),
+            isHDR: stream.color_transfer === 'smpte2084' || stream.color_transfer === 'arib-std-b67',
+            bitrate: this.parseInt(stream.bit_rate),
+            pixelFormat: stream.pix_fmt || 'yuv420p',
+          })),
+        audioStreams: results.streams
+          .filter((stream) => stream.codec_type === 'audio')
+          .map((stream) => ({
+            index: stream.index,
+            codecType: stream.codec_type,
+            codecName: stream.codec_name,
+            bitrate: this.parseInt(stream.bit_rate),
+          })),
+      };
+    } catch (error: any) {
+      this.logger.error(`FFprobe failed for "${input}": ${error.message}`, error);
+      this.logger.warn(`Skipping corrupt video: ${input}`);
+    }
     return {
       format: {
-        formatName: results.format.format_name,
-        formatLongName: results.format.format_long_name,
-        duration: this.parseFloat(results.format.duration),
-        bitrate: this.parseInt(results.format.bit_rate),
+        formatName: '',
+        formatLongName: '',
+        duration: 0,
+        bitrate: 0,
       },
-      videoStreams: results.streams
-        .filter((stream) => stream.codec_type === 'video')
-        .filter((stream) => !stream.disposition?.attached_pic)
-        .map((stream) => ({
-          index: stream.index,
-          height: this.parseInt(stream.height),
-          width: this.parseInt(stream.width),
-          codecName: stream.codec_name === 'h265' ? 'hevc' : stream.codec_name,
-          codecType: stream.codec_type,
-          frameCount: this.parseInt(options?.countFrames ? stream.nb_read_packets : stream.nb_frames),
-          rotation: this.parseInt(stream.rotation),
-          isHDR: stream.color_transfer === 'smpte2084' || stream.color_transfer === 'arib-std-b67',
-          bitrate: this.parseInt(stream.bit_rate),
-          pixelFormat: stream.pix_fmt || 'yuv420p',
-        })),
-      audioStreams: results.streams
-        .filter((stream) => stream.codec_type === 'audio')
-        .map((stream) => ({
-          index: stream.index,
-          codecType: stream.codec_type,
-          codecName: stream.codec_name,
-          bitrate: this.parseInt(stream.bit_rate),
-        })),
+      videoStreams: [],
+      audioStreams: [],
     };
   }
 
@@ -262,7 +285,7 @@ export class MediaRepository {
       .inputOptions(options.inputOptions)
       .outputOptions(options.outputOptions)
       .output(output)
-      .on('start', (command: string) => this.logger.debug(command))
+      .on('start', (command: string) => this.logger.verbose(command))
       .on('error', (error, _, stderr) => this.logger.error(stderr || error));
 
     const { frameCount, percentInterval } = options.progress;
