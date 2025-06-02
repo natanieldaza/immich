@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsDateString,
   IsEnum,
   IsInt,
@@ -68,9 +69,19 @@ export class AssetBulkUpdateDto extends UpdateAssetBase {
   duplicateId?: string | null;
 }
 
+export class AssetBulkMoveDto extends BulkIdsDto {
+
+  @IsString()
+  newFolderPath?: string;
+}
+
 export class UpdateAssetDto extends UpdateAssetBase {
   @ValidateUUID({ optional: true, nullable: true })
   livePhotoVideoId?: string | null;
+
+  @Optional()
+  @IsBoolean()
+  viewed?: boolean;
 }
 
 export class RandomAssetsDto {

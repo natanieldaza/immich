@@ -1,11 +1,13 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import _ from 'lodash';
 import { DateTime, Duration } from 'luxon';
+import path from 'node:path';
 import { JOBS_ASSET_PAGINATION_SIZE } from 'src/constants';
 import { OnJob } from 'src/decorators';
 import { AssetResponseDto, MapAsset, SanitizedAssetResponseDto, mapAsset } from 'src/dtos/asset-response.dto';
 import {
   AssetBulkDeleteDto,
+  AssetBulkMoveDto,
   AssetBulkUpdateDto,
   AssetJobName,
   AssetJobsDto,
@@ -145,6 +147,11 @@ export class AssetService extends BaseService {
     }
   }
 
+  async setViewed(auth: AuthDto, id: string): Promise<void> {
+    await this.requireAccess({ auth, permission: Permission.ASSET_UPDATE, ids: [id] });
+    await this.assetRepository.setViewed(id);
+  }
+    
   @OnJob({ name: JobName.ASSET_DELETION_CHECK, queue: QueueName.BACKGROUND_TASK })
   async handleAssetDeletionCheck(): Promise<JobStatus> {
     const config = await this.getConfig({ withCache: false });
@@ -225,10 +232,59 @@ export class AssetService extends BaseService {
     const files = [thumbnailFile?.path, previewFile?.path, fullsizeFile?.path, asset.encodedVideoPath];
 
     if (deleteOnDisk) {
-      files.push(asset.sidecarPath, asset.originalPath);
+      const jsonFile = asset.originalPath + '.json';
+      const textFile = asset.originalPath + '.txt';
+      files.push(asset.sidecarPath, asset.originalPath, jsonFile, textFile);
     }
 
     await this.jobRepository.queue({ name: JobName.DELETE_FILES, data: { files } });
+
+    return JobStatus.SUCCESS;
+  }
+
+
+  moveToNewBase(originalPath: string, newBase: string): string {
+    const fileName = originalPath.split(path.sep).pop()!; // Get the file name
+    return path.join(newBase, fileName); // Only append the file name to the new base
+  }
+
+  @OnJob({ name: JobName.ASSET_MOVING, queue: QueueName.BACKGROUND_TASK })
+  async handleAssetMoving(job: JobOf<JobName.ASSET_MOVING>): Promise<JobStatus> {
+    const { id, baseDestination } = job;
+
+    const asset = await this.assetRepository.getById(id, {
+      faces: { person: true },
+      library: true,
+      stack: { assets: true },
+      exifInfo: true,
+      files: true,
+    });
+
+    if (!asset) {
+      return JobStatus.FAILED;
+    }
+
+    this.logger.debug(`Moving asset ${id} to ${baseDestination}`);
+    const files: [string, string][] = [];
+
+    const oldOriginal = asset.originalPath;
+    const oldSidecar = asset.sidecarPath ?? '';
+    const oldJson = `${oldOriginal}.json`;
+    const oldTxt = `${oldOriginal}.txt`;
+
+    const newOriginal = this.moveToNewBase(oldOriginal, baseDestination);
+    const newSidecar = this.moveToNewBase(oldSidecar, baseDestination);
+    const newJson = `${newOriginal}.json`;
+    const newTxt = `${newOriginal}.txt`;
+
+    if (oldOriginal) files.push([oldOriginal, newOriginal]);
+    if (oldSidecar) files.push([oldSidecar, newSidecar]);
+    files.push([oldJson, newJson], [oldTxt, newTxt]);
+
+    this.logger.debug(`Moving files: ${JSON.stringify(files)}`);
+
+    await this.jobRepository.queue({ name: JobName.MOVE_FILES, data: { files } });
+    await this.assetRepository.updatePaths(id, baseDestination);
 
     return JobStatus.SUCCESS;
   }
@@ -243,6 +299,27 @@ export class AssetService extends BaseService {
     });
     await this.eventRepository.emit(force ? 'assets.delete' : 'assets.trash', { assetIds: ids, userId: auth.user.id });
   }
+
+  async moveAll(auth: AuthDto, dto: AssetBulkMoveDto): Promise<void> {
+    const { ids, newFolderPath } = dto;
+    await this.requireAccess({ auth, permission: Permission.ASSET_UPDATE, ids });
+    this.logger.debug(`Moving ${ids.length} assets to ${newFolderPath}`);
+    if (!newFolderPath) {
+      throw new BadRequestException('New folder path is required');
+    }
+    let fixedPath = newFolderPath;
+    if (newFolderPath[0] !== '/') fixedPath = '/' + newFolderPath;
+
+    for (const id of ids) {
+      await this.jobRepository.queue({ name: JobName.ASSET_MOVING, data: { id, baseDestination: fixedPath } });
+    }
+
+
+  }
+
+
+
+
 
   async run(auth: AuthDto, dto: AssetJobsDto) {
     await this.requireAccess({ auth, permission: Permission.ASSET_UPDATE, ids: dto.assetIds });

@@ -391,6 +391,15 @@ export class AssetRepository {
     await this.db.updateTable('assets').set(options).where('libraryId', '=', asUuid(libraryId)).execute();
   }
 
+  async setViewed(id:string): Promise<void> {
+    await this.db
+      .updateTable('assets')
+      .set({ viewed: true })
+      .where('id', '=', asUuid(id))
+      .execute();
+  }
+
+
   async update(asset: Updateable<Assets> & { id: string }) {
     const value = omitBy(asset, isUndefined);
     delete value.id;

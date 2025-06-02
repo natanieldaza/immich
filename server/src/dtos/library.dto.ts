@@ -47,17 +47,28 @@ export class UpdateLibraryDto {
   @ArrayMaxSize(128)
   exclusionPatterns?: string[];
 }
-
 export interface CrawlOptionsDto {
   pathsToCrawl: string[];
   includeHidden?: boolean;
   exclusionPatterns?: string[];
+
 }
 
 export interface WalkOptionsDto extends CrawlOptionsDto {
   take: number;
+  typeFilter: 'all' | 'files' | 'directories';
+  deepth?: number;
+  /*skip?: number;
+  sort?: 'asc' | 'desc';
+  sortBy?: 'name' | 'size' | 'createdAt' | 'updatedAt';
+  sortByType?: 'string' | 'number' | 'date';
+  sortByOrder?: 'asc' | 'desc';
+  sortByOrderType?: 'string' | 'number' | 'date';
+  sortByOrderDirection?: 'asc' | 'desc';
+  sortByOrderDirectionType?: 'string' | 'number' | 'date';
+  sortByOrderDirectionOrder?: 'asc' | 'desc';
+  sortByOrderDirectionOrderType?: 'string' | 'number' | 'date';*/
 }
-
 export class ValidateLibraryDto {
   @Optional()
   @IsString({ each: true })
@@ -137,3 +148,4 @@ export function mapLibrary(entity: Library): LibraryResponseDto {
     exclusionPatterns: entity.exclusionPatterns,
   };
 }
+

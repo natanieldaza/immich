@@ -176,6 +176,11 @@ export enum Permission {
   ADMIN_USER_READ = 'admin.user.read',
   ADMIN_USER_UPDATE = 'admin.user.update',
   ADMIN_USER_DELETE = 'admin.user.delete',
+
+  URL_CREATE = 'url.create',
+  URL_READ = 'url.read',
+  URL_UPDATE = 'url.update',
+
 }
 
 export enum SharedLinkType {
@@ -237,6 +242,15 @@ export enum AssetStatus {
   ACTIVE = 'active',
   TRASHED = 'trashed',
   DELETED = 'deleted',
+}
+
+export enum DirectoryStatus {
+  ADDED = 'added',
+  QUEUED = 'queued',
+  PROCESSING = 'processing',
+  DONE = 'done',
+  FAILED = 'failed',
+  SKIPPED = 'skipped',
 }
 
 export enum SourceType {
@@ -443,6 +457,11 @@ export enum QueueName {
   LIBRARY = 'library',
   NOTIFICATION = 'notifications',
   BACKUP_DATABASE = 'backupDatabase',
+  PERSON_DATA_SCRAPPING = 'personDataScrapping',
+  SOCIAL_MEDIA_DATA_SCRAPPING = 'socialMediaDataScrapping',
+  SOCIAL_MEDIA_DATA_SCRAPPING_WEB = 'socialMediaDataScrappingWeb',
+  LOCATION_DATA_SCRAPPING_WEB = 'locationDataScrappingWeb',
+  PERSON_SIDECAR = 'personSidecar',
 }
 
 export enum JobName {
@@ -470,6 +489,7 @@ export enum JobName {
   // asset
   ASSET_DELETION = 'asset-deletion',
   ASSET_DELETION_CHECK = 'asset-deletion-check',
+  ASSET_MOVING = 'asset-moving',
 
   // storage template
   STORAGE_TEMPLATE_MIGRATION = 'storage-template-migration',
@@ -491,8 +511,12 @@ export enum JobName {
   FACIAL_RECOGNITION = 'facial-recognition',
 
   // library management
+  LIBRARY_QUEUE_SYNC_DIRECTORIES = 'library-queue-sync-directories',
+
   LIBRARY_QUEUE_SYNC_FILES = 'library-queue-sync-files',
   LIBRARY_QUEUE_SYNC_ASSETS = 'library-queue-sync-assets',
+  LIBRARY_SYNC_DIRECTORIES = 'library-sync-directories',
+
   LIBRARY_SYNC_FILES = 'library-sync-files',
   LIBRARY_SYNC_ASSETS = 'library-sync-assets',
   LIBRARY_ASSET_REMOVAL = 'handle-library-file-deletion',
@@ -502,6 +526,7 @@ export enum JobName {
 
   // cleanup
   DELETE_FILES = 'delete-files',
+  MOVE_FILES = 'move-files',
   CLEAN_OLD_AUDIT_LOGS = 'clean-old-audit-logs',
   CLEAN_OLD_SESSION_TOKENS = 'clean-old-session-tokens',
 
@@ -534,6 +559,27 @@ export enum JobName {
 
   // Version check
   VERSION_CHECK = 'version-check',
+  //PERSON DATA SCRAPPING
+  QUEUE_PERSON_DATA_SCRAPPING = 'queue-person-data-scrapping',
+  PERSON_DATA_SCRAPPING = 'person-data-scrapping',
+
+  //PERSON SIDECAR
+  QUEUE_PERSON_SIDECAR_WRITE = 'queue-person-sidecar-write',
+  PERSON_SIDECAR_DISCOVERY = 'person-sidecar-discovery',
+  PERSON_SIDECAR_SYNC = 'person-sidecar-sync',
+  PERSON_SIDECAR_WRITE = 'person-sidecar-write',
+
+
+  //SOCIAL MEDIA DATA SCRAPPING
+  QUEUE_SOCIAL_MEDIA_DATA_SCRAPPING = 'queue-social-media-data-scrapping',
+  SOCIAL_MEDIA_DATA_SCRAPPING = 'social-media-data-scrapping',
+
+  //WebData Scrapping
+  QUEUE_SOCIAL_MEDIA_DATA_SCRAPPING_WEB = 'queue-social-media-data-scrapping-web',
+  SOCIAL_MEDIA_DATA_SCRAPPING_WEB = 'social-media-data-scrapping-web',
+
+  QUEUE_LOCATION_DATA_SCRAPPING_WEB = 'queue-location-data-scrapping-web',
+  LOCATION_DATA_SCRAPPING_WEB = 'location-data-scrapping-web',
 }
 
 export enum JobCommand {
@@ -542,12 +588,14 @@ export enum JobCommand {
   RESUME = 'resume',
   EMPTY = 'empty',
   CLEAR_FAILED = 'clear-failed',
+  STOP = 'stop',
 }
 
 export enum JobStatus {
   SUCCESS = 'success',
   FAILED = 'failed',
   SKIPPED = 'skipped',
+  DONE = "DONE",
 }
 
 export enum QueueCleanType {
@@ -641,3 +689,61 @@ export enum AssetVisibility {
   HIDDEN = 'hidden',
   LOCKED = 'locked',
 }
+
+export enum RelationshipType {
+  // Familia nuclear
+  PARENT = 'parent',
+  CHILD = 'child',
+  SIBLING = 'sibling',
+  SPOUSE = 'spouse',
+
+  // Familia extendida
+  GRANDPARENT = 'grandparent',
+  GRANDCHILD = 'grandchild',
+  UNCLE = 'uncle',
+  AUNT = 'aunt',
+  NEPHEW = 'nephew',
+  NIECE = 'niece',
+  COUSIN = 'cousin',
+
+  // Relaciones por afinidad (familia política)
+  PARENT_IN_LAW = 'parent_in_law',
+  CHILD_IN_LAW = 'child_in_law',
+  SIBLING_IN_LAW = 'sibling_in_law',
+
+  // Relaciones de amistad
+  FRIEND = 'friend',
+  BEST_FRIEND = 'best_friend',
+  ACQUAINTANCE = 'acquaintance',
+  FRIEND_OF_FRIEND = 'friend_of_friend',
+
+  // Relaciones profesionales
+  COLLEAGUE = 'colleague',
+  SUPERVISOR = 'supervisor',
+  SUBORDINATE = 'subordinate',
+  BUSINESS_PARTNER = 'business_partner',
+  COAUTHOR = 'coauthor',
+
+
+  // Relaciones académicas y deportivas
+  CLASSMATE = 'classmate',
+  TEACHER = 'teacher',
+  STUDENT = 'student',
+  TEAMMATE = 'teammate',
+
+  // Otros tipos de relaciones
+  NEIGHBOR = 'neighbor',
+  ROOMMATE = 'roommate',
+  MENTOR = 'mentor',
+  MENTEE = 'mentee'
+}
+
+export enum AssetPersonType{
+  MAIN = 'main',
+  OWNER = 'owner',
+  TAGGED = 'tagged',
+  EDGE = 'edge',
+  COAUTHOR = 'coauthor',
+  MENTIONS = 'mentions',
+}
+

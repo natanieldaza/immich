@@ -43,6 +43,7 @@
   let isTrashSelected: boolean = $state(false);
   let isUtilitiesSelected: boolean = $state(false);
   let isLockedFolderSelected: boolean = $state(false);
+  let isSitesUrlSelected: boolean = $state(false);
 </script>
 
 <Sidebar ariaLabel={$t('primary')}>
@@ -94,6 +95,14 @@
     icon={isFavoritesSelected ? mdiHeart : mdiHeartOutline}
     bind:isSelected={isFavoritesSelected}
   ></SideBarLink>
+
+  <SideBarLink
+      title={$t('urls')}
+      routeId="/(user)/sites-url"
+      icon={isPeopleSelected ? mdiAccount : mdiAccountOutline}
+      bind:isSelected={isSitesUrlSelected}
+    ></SideBarLink>
+
 
   <SideBarLink
     title={$t('albums')}

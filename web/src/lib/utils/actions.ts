@@ -2,7 +2,7 @@ import { notificationController, NotificationType } from '$lib/components/shared
 import { TimelineManager } from '$lib/managers/timeline-manager/timeline-manager.svelte';
 import type { TimelineAsset } from '$lib/managers/timeline-manager/types';
 import type { StackResponse } from '$lib/utils/asset-utils';
-import { AssetVisibility, deleteAssets as deleteBulk, restoreAssets } from '@immich/sdk';
+import { AssetVisibility, deleteAssets as deleteBulk, moveAssets as moveBulk, restoreAssets } from '@immich/sdk';
 import { t } from 'svelte-i18n';
 import { get } from 'svelte/store';
 import { handleError } from './handle-error';
@@ -18,6 +18,7 @@ export type OnFavorite = (ids: string[], favorite: boolean) => void;
 export type OnStack = (result: StackResponse) => void;
 export type OnUnstack = (assets: TimelineAsset[]) => void;
 export type OnSetVisibility = (ids: string[]) => void;
+export type OnMove = (assetIds: string[], newFolderPath: string) => void;
 
 export const deleteAssets = async (
   force: boolean,
@@ -44,6 +45,20 @@ export const deleteAssets = async (
     });
   } catch (error) {
     handleError(error, $t('errors.unable_to_delete_assets'));
+  }
+};
+export const moveAssets = async (onAssetMove: OnMove, ids: string[], newFolderPath: string) => {
+  const $t = get(t);
+  try {
+    console.log('Moving assets', ids, newFolderPath);
+    await moveBulk({ assetBulkMoveDto: { ids, newFolderPath } });
+    onAssetMove(ids, newFolderPath);
+    notificationController.show({
+      message: $t('assets_moved_count', { values: { count: ids.length }, ' to folder': newFolderPath }),
+      type: NotificationType.Info,
+    });
+  } catch (error) {
+    handleError(error, $t('errors.unable_to_move_assets'));
   }
 };
 

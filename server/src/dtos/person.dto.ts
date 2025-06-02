@@ -7,6 +7,8 @@ import { AssetFace, Person } from 'src/database';
 import { AssetFaces } from 'src/db';
 import { PropertyLifecycle } from 'src/decorators';
 import { AuthDto } from 'src/dtos/auth.dto';
+import { PersonRelationshipDto } from 'src/dtos/person-relationship.dto';
+import { SocialMediaResponseDto } from 'src/dtos/social-media.dto';
 import { SourceType } from 'src/enum';
 import { asDateString } from 'src/utils/date';
 import {
@@ -36,6 +38,11 @@ export class PersonCreateDto {
   @Optional({ nullable: true, emptyToNull: true })
   birthDate?: Date | null;
 
+  @ApiProperty({ type: 'integer' })
+  @IsNumber()
+  @Optional({ nullable: true })
+  age?: number | null;
+
   /**
    * Person visibility
    */
@@ -48,6 +55,13 @@ export class PersonCreateDto {
   @Optional({ emptyToNull: true, nullable: true })
   @ValidateHexColor()
   color?: string | null;
+
+  /**
+   * Person description
+   */
+  @Optional({ emptyToNull: true, nullable: true })
+  @IsString()
+  description?: string | null;
 }
 
 export class PersonUpdateDto extends PersonCreateDto {
@@ -56,6 +70,20 @@ export class PersonUpdateDto extends PersonCreateDto {
    */
   @ValidateUUID({ optional: true })
   featureFaceAssetId?: string;
+
+  @Optional({ emptyToNull: true, nullable: true })
+  @IsString()
+  country?: string | null;
+
+  @Optional({ emptyToNull: true, nullable: true })
+  @IsString()
+  city?: string | null;
+
+  @Optional({ emptyToNull: true, nullable: true })
+  @IsNumber()
+  height?: number | null;
+
+
 }
 
 export class PeopleUpdateDto {
@@ -116,7 +144,32 @@ export class PersonResponseDto {
   isFavorite?: boolean;
   @PropertyLifecycle({ addedAt: 'v1.126.0' })
   color?: string;
+  description?: string | null;
+  age?: number | null;
+  country?: string | null;
+  city?: string | null;
+  height?: number | null;
+  ownerId?: string;
+  socialMedia?: SocialMediaResponseDto[];
+  relationships?: PersonRelationshipDto[];
 }
+
+
+export class SideCarPersonDto {
+  id!: string;
+  name!: string;
+  username!: string;
+  hashId?: string;
+  url?: string;
+  @ApiProperty({ format: 'date' })
+  birthDate?: string | null;
+  age?: number | null;
+  /** This property was added in v1.126.0 */
+  color?: string;
+  updatedAt?: Date;
+  thumbnailPath?: string;
+  socialMedia?: SocialMediaResponseDto[];
+};
 
 export class PersonWithFacesResponseDto extends PersonResponseDto {
   faces!: AssetFaceWithoutPersonResponseDto[];
@@ -229,8 +282,51 @@ export function mapPerson(person: Person): PersonResponseDto {
     isFavorite: person.isFavorite,
     color: person.color ?? undefined,
     updatedAt: person.updatedAt,
+    description: person.description,
+    age: person.age,
+    country: person.country,
+    city: person.city,
+    height: person.height,
+    
   };
 }
+
+export function mapPersonDb(person: {
+  id: string;
+  name: string;
+  birthDate: Date | null;
+  thumbnailPath: string;
+  isHidden: boolean;
+  isFavorite: boolean;
+  color: string | null;
+  updatedAt: Date;
+  description: string | null;
+  age: number | null;
+  country: string | null;
+  city: string | null;
+  height: number | null;
+  ownerId: string;
+}): PersonResponseDto {
+  return {
+    id: person.id,
+    name: person.name,
+    birthDate: person.birthDate ? person.birthDate.toISOString().split('T')[0] : null,
+    thumbnailPath: person.thumbnailPath,
+    isHidden: person.isHidden,
+    isFavorite: person.isFavorite,
+    color: person.color ?? undefined,
+    updatedAt: person.updatedAt,
+    description: person.description,
+    age: person.age,
+    country: person.country,
+    city: person.city,
+    height: person.height,
+    ownerId: person.ownerId,
+  
+  };
+}
+
+
 
 export function mapFacesWithoutPerson(face: Selectable<AssetFaces>): AssetFaceWithoutPersonResponseDto {
   return {
@@ -242,6 +338,19 @@ export function mapFacesWithoutPerson(face: Selectable<AssetFaces>): AssetFaceWi
     boundingBoxY1: face.boundingBoxY1,
     boundingBoxY2: face.boundingBoxY2,
     sourceType: face.sourceType,
+  };
+}
+
+export function mapPersonWithoutAssetface(person: Person): SideCarPersonDto {
+  return {
+    id: person.id,
+    name: person.name,
+    birthDate: asDateString(person.birthDate),
+    age: person.age,
+    color: person.color ?? undefined,
+    updatedAt: person.updatedAt,
+    username: '',
+    hashId: '',
   };
 }
 

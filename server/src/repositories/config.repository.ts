@@ -103,6 +103,7 @@ export interface EnvData {
 
   noColor: boolean;
   nodeVersion?: string;
+  cookies_path: string;
 }
 
 const productionKeys = {
@@ -191,11 +192,12 @@ const getEnv = (): EnvData => {
         host: dto.DB_HOSTNAME || 'database',
         port: dto.DB_PORT || 5432,
         username: dto.DB_USERNAME || 'postgres',
-        password: dto.DB_PASSWORD || 'postgres',
+        password: dto.DB_PASSWORD || 'localImmich',
         database: dto.DB_DATABASE_NAME || 'immich',
         ssl: dto.DB_SSL_MODE || undefined,
       };
-
+  const cookies_path = dto.IMMICH_COOKIES_PATH ? '/usr/src/app/cookies/' : '';
+      
   let vectorExtension: VectorExtension | undefined;
   switch (dto.DB_VECTOR_EXTENSION) {
     case 'pgvector': {
@@ -316,7 +318,8 @@ const getEnv = (): EnvData => {
     workers,
 
     noColor: !!dto.NO_COLOR,
-  };
+    cookies_path: cookies_path,
+    };
 };
 
 let cached: EnvData | undefined;

@@ -9,6 +9,7 @@ import {
   PersonWithFacesResponseDto,
   mapFacesWithoutPerson,
   mapPerson,
+  personWithoutAssetfaceDto
 } from 'src/dtos/person.dto';
 import { TagResponseDto, mapTag } from 'src/dtos/tag.dto';
 import { UserResponseDto, mapUser } from 'src/dtos/user.dto';
@@ -85,6 +86,15 @@ export class AssetResponseDto extends SanitizedAssetResponseDto {
 
   @PropertyLifecycle({ deprecatedAt: 'v1.113.0' })
   resized?: boolean;
+
+  ownerPerson?: personWithoutAssetfaceDto;
+    mainPerson?: personWithoutAssetfaceDto;
+    taggedPeople?: personWithoutAssetfaceDto[];
+    mentionedPeople?: personWithoutAssetfaceDto[];
+    edgeRelatedPeople?: personWithoutAssetfaceDto[];
+    assetUrl?: string;
+    locationName?: string;
+    locationUrl?: string;
 }
 
 export type MapAsset = {

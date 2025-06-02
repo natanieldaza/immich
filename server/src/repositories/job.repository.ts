@@ -12,6 +12,9 @@ import { LoggingRepository } from 'src/repositories/logging.repository';
 import { JobCounts, JobItem, JobOf, QueueStatus } from 'src/types';
 import { getKeyByValue, getMethodNames, ImmichStartupError } from 'src/utils/misc';
 
+
+import Redis from 'ioredis';
+
 type JobMapItem = {
   jobName: JobName;
   queueName: QueueName;
@@ -19,10 +22,13 @@ type JobMapItem = {
   label: string;
 };
 
+
 @Injectable()
 export class JobRepository {
   private workers: Partial<Record<QueueName, Worker>> = {};
   private handlers: Partial<Record<JobName, JobMapItem>> = {};
+  private redis = new Redis({ host: 'redis', port: 6379 });
+  
 
   constructor(
     private moduleRef: ModuleRef,
@@ -84,15 +90,33 @@ export class JobRepository {
   }
 
   startWorkers() {
+    this.logger.log('Starting workers...');
     const { bull } = this.configRepository.getEnv();
     for (const queueName of Object.values(QueueName)) {
-      this.logger.debug(`Starting worker for queue: ${queueName}`);
+      this.logger.log(`Starting worker for queue: ${queueName}`);
       this.workers[queueName] = new Worker(
         queueName,
         (job) => this.eventRepository.emit('job.start', queueName, job as JobItem),
         { ...bull.config, concurrency: 1 },
       );
     }
+    this.logger.log('Workers started');
+  }
+
+  async stopWorkers() {
+    for (const worker of Object.values(this.workers)) {
+      if (worker) {
+        this.logger.debug(`Stopping worker for queue: ${worker.name}`);
+        await worker.close();
+      }
+    }
+    this.workers = {};
+  }
+
+  async restartWorkers() {
+    this.logger.debug('Restarting workers...');
+    await this.stopWorkers();
+    this.startWorkers();
   }
 
   async run({ name, data }: JobItem) {
@@ -126,6 +150,10 @@ export class JobRepository {
 
   pause(name: QueueName) {
     return this.getQueue(name).pause();
+  }
+
+  stop(name: QueueName) {
+    return this.getQueue(name).drain();
   }
 
   resume(name: QueueName) {
@@ -237,5 +265,21 @@ export class JobRepository {
     if (existingJob) {
       await existingJob.remove();
     }
+  }
+
+  async setPendingSidecarCount(directoryId: string, count: number) {
+    const key = `import:directory:${directoryId}:pending_sidecar_count`;
+    await this.redis.set(key, count);
+  }
+
+  async decrementPendingSidecarCount(directoryId: string): Promise<number> {
+    const key = `import:directory:${directoryId}:pending_sidecar_count`;
+    return this.redis.decr(key);
+  }
+
+  async getPendingSidecarCount(directoryId: string): Promise<number> {
+    const key = `import:directory:${directoryId}:pending_sidecar_count`;
+    const count = await this.redis.get(key);
+    return count ? Number.parseInt(count, 10) : 0;
   }
 }

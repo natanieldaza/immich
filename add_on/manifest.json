@@ -1,0 +1,53 @@
+{
+  "manifest_version": 2,
+  "name": "SitesUrl Saver",
+  "version": "1.0",
+  "description": "Save current page with a preference to your API, and optionally scrape Instagram page data.",
+  "permissions": [
+    "contextMenus",
+    "tabs",
+    "storage",
+    "http://localhost:3000/*",
+    "https://www.instagram.com/*"
+  ],
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.instagram.com/*"],
+      "js": ["content_script.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "commands": {
+    "save_preference_1": {
+      "suggested_key": { "default": "Ctrl+Shift+1" },
+      "description": "Save with low priority"
+    },
+    "save_preference_2": {
+      "suggested_key": { "default": "Ctrl+Shift+2" },
+      "description": "Save with below average priority"
+    },
+    "save_preference_3": {
+      "suggested_key": { "default": "Ctrl+Shift+3" },
+      "description": "Save with medium priority"
+    },
+    "save_preference_4": {
+      "suggested_key": { "default": "Ctrl+Shift+4" },
+      "description": "Save with above average priority"
+    },
+    "save_preference_5": {
+      "suggested_key": { "default": "Ctrl+Shift+5" },
+      "description": "Save with high priority"
+    }
+  },
+  "browser_action": {
+    "default_title": "SitesUrl Saver"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "options_page": "options.html"
+}

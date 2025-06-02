@@ -32,9 +32,11 @@
   } from '$lib/components/shared-components/notification/notification';
   import { AppRoute, PersonPageViewMode, QueryParameter, SessionStorageKey } from '$lib/constants';
   import { modalManager } from '$lib/managers/modal-manager.svelte';
+  import PersonDescriptionEditModal from '$lib/modals/PersonDescriptionEditModal.svelte';
   import { TimelineManager } from '$lib/managers/timeline-manager/timeline-manager.svelte';
   import type { TimelineAsset } from '$lib/managers/timeline-manager/types';
   import PersonEditBirthDateModal from '$lib/modals/PersonEditBirthDateModal.svelte';
+  import PersonEditModal from '$lib/modals/PersonEditModal.svelte';
   import PersonMergeSuggestionModal from '$lib/modals/PersonMergeSuggestionModal.svelte';
   import { AssetInteraction } from '$lib/stores/asset-interaction.svelte';
   import { assetViewingStore } from '$lib/stores/asset-viewing.store';
@@ -291,7 +293,7 @@
     isEditingName = false;
     potentialMergePeople = [];
     personName = name;
-
+    console.log('handleNameChange 1 name', name);
     if (person.name === personName) {
       return;
     }
@@ -299,7 +301,7 @@
       await changeName();
       return;
     }
-
+    console.log('handleNameChange 2 name', name);
     const result = await searchPerson({ name: personName, withHidden: true });
 
     const existingPerson = result.find(
@@ -330,6 +332,40 @@
       return;
     }
 
+    person = updatedPerson;
+    people = people.map((person: PersonResponseDto) => {
+      if (person.id === updatedPerson.id) {
+        return updatedPerson;
+      }
+      return person;
+    });
+  };
+
+  const handleEditDescription = async () => {
+    const updatedPerson = await modalManager.show(PersonDescriptionEditModal, { person });
+
+    if (!updatedPerson) {
+      return;
+    }
+    person = updatedPerson;
+
+    people = people.map((person: PersonResponseDto) => {
+      if (person.id === updatedPerson.id) {
+        return updatedPerson;
+      }
+      return person;
+    });
+  };
+
+  const handleEditPersonData = async () => {
+    const updatedPerson = await modalManager.show(PersonEditModal, {
+      person,
+      suggestedPeople,
+      isSearchingPeople,
+    });
+    if (!updatedPerson) {
+      return;
+    }
     person = updatedPerson;
     people = people.map((person: PersonResponseDto) => {
       if (person.id === updatedPerson.id) {
@@ -393,8 +429,8 @@
       onSelect={handleSelectFeaturePhoto}
       onEscape={handleEscape}
     >
-      {#if viewMode === PersonPageViewMode.VIEW_ASSETS}
-        <!-- Person information block -->
+    {#if viewMode === PersonPageViewMode.VIEW_ASSETS || viewMode === PersonPageViewMode.EDIT_DESCRIPTION || viewMode === PersonPageViewMode.EDITPERSON_DATA}
+    <!-- Person information block -->
         <div
           class="relative w-fit p-4 sm:px-6 pt-12"
           use:clickOutside={{
@@ -454,6 +490,78 @@
                     {/if}
                   </div>
                 </button>
+                {#if person.description}
+                  <p class="text-sm text-gray-500 dark:text-immich-gray">
+                    {$t('person_description', { values: { description: person.description } })}
+                  </p>
+                {/if}
+                {#if person.socialMedia && person.socialMedia.length > 0}
+                  <p class="text-sm text-gray-500 dark:text-immich-gray">
+                    {#each person.socialMedia as { name, url } (url)}
+                      <a href={url} target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline">
+                        {name}
+                      </a>{#if person.socialMedia.at(-1)?.name !== name || person.socialMedia.at(-1)?.url !== url},
+                      {/if}
+                    {/each}
+                  </p>
+                {/if}
+
+                {#if person.relationships && person.relationships.length > 0}
+                  <div class="flex h-full w-full place-items-center justify-left">
+                    {#each person.relationships as relationship (relationship.relatedPerson.id)}
+                      <a
+                        href="{AppRoute.PEOPLE}/{relationship.relatedPerson
+                          .id}?{QueryParameter.PREVIOUS_ROUTE}={AppRoute.PEOPLE}/{person.id}"
+                        draggable="false"
+                      >
+                        <ImageThumbnail
+                          shadow
+                          url={getPeopleThumbnailUrl(relationship.relatedPerson as PersonResponseDto)}
+                          altText={relationship.relatedPerson.name}
+                          widthStyle="3.375rem"
+                          heightStyle="3.375rem"
+                        />
+                        <div class="flex flex-col justify-center text-immich-primary dark:text-immich-dark-primary">
+                          <p class="w-auto sm:w-72 font-medium truncate">{relationship.relatedPerson.name}</p>
+
+                          {#if relationship.relatedPerson.birthDate}
+                            {@const personBirthDate = DateTime.fromISO(
+                              typeof relationship.relatedPerson.birthDate === 'string'
+                                ? relationship.relatedPerson.birthDate
+                                : relationship.relatedPerson.birthDate.toISOString(),
+                            )}
+                            {@const age = Math.floor(DateTime.now().diff(personBirthDate, 'years').years)}
+                            {@const ageInMonths = Math.floor(DateTime.now().diff(personBirthDate, 'months').months)}
+                            {#if age >= 0}
+                              <p
+                                class="font-light"
+                                title={personBirthDate.toLocaleString(
+                                  {
+                                    month: 'long',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                  },
+                                  { locale: $locale },
+                                )}
+                              >
+                                {#if ageInMonths <= 11}
+                                  {$t('age_months', { values: { months: ageInMonths } })}
+                                {:else if ageInMonths > 12 && ageInMonths <= 23}
+                                  {$t('age_year_months', { values: { months: ageInMonths - 12 } })}
+                                {:else}
+                                  {$t('age_years', { values: { years: age } })}
+                                {/if}
+                              </p>
+                            {/if}
+                          {/if}
+                          {#if relationship.type}
+                            <p class="w-auto sm:w-72 font-medium truncate">{relationship.type}</p>
+                          {/if}
+                        </div>
+                      </a>
+                    {/each}
+                  </div>
+                {/if}
               </div>
             {/if}
           </section>
@@ -546,7 +654,7 @@
       </ButtonContextMenu>
     </AssetSelectControlBar>
   {:else}
-    {#if viewMode === PersonPageViewMode.VIEW_ASSETS}
+    {#if viewMode === PersonPageViewMode.VIEW_ASSETS || viewMode === PersonPageViewMode.EDIT_DESCRIPTION || viewMode === PersonPageViewMode.EDITPERSON_DATA}
       <ControlAppBar showBackButton backIcon={mdiArrowLeft} onClose={() => goto(previousRoute)}>
         {#snippet trailing()}
           <ButtonContextMenu icon={mdiDotsVertical} title={$t('menu')}>
@@ -570,6 +678,16 @@
               icon={person.isFavorite ? mdiHeartMinusOutline : mdiHeartOutline}
               text={person.isFavorite ? $t('unfavorite') : $t('to_favorite')}
               onClick={handleToggleFavorite}
+            />
+            <MenuOption
+              text={$t('edit_description')}
+              icon={mdiAccountMultipleCheckOutline}
+              onClick={handleEditDescription}
+            />
+            <MenuOption
+              text={$t('edit_person_data')}
+              icon={mdiAccountMultipleCheckOutline}
+              onClick={handleEditPersonData}
             />
           </ButtonContextMenu>
         {/snippet}
