@@ -4,7 +4,7 @@ RUN apk add --no-cache tini
 USER node
 WORKDIR /usr/src/app
 COPY --chown=node:node package*.json ./
-RUN npm ci
+RUN npm ci --legacy-peer-deps --no-audit --no-fund 
 ENV CHOKIDAR_USEPOLLING=true
 EXPOSE 24678
 EXPOSE 3000

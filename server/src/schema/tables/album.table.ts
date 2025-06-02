@@ -61,4 +61,10 @@ export class AlbumTable {
 
   @UpdateIdColumn({ indexName: 'IDX_albums_update_id' })
   updateId?: string;
+
+  @Column({ type: 'boolean', default: false })
+  viewed!: boolean;
+
+  @ForeignKeyColumn(() => AlbumTable, { onDelete: 'CASCADE', onUpdate: 'CASCADE', nullable: true })
+  parentId!: string;
 }

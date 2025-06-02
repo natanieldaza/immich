@@ -62,6 +62,7 @@ export class PersonController {
     @Param() { id }: UUIDParamDto,
     @Body() dto: PersonUpdateDto,
   ): Promise<PersonResponseDto> {
+    this.logger.log('info', 'Updating person', { auth, id, dto });
     return this.service.update(auth, id, dto);
   }
 

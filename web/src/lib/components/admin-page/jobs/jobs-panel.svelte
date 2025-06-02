@@ -61,13 +61,14 @@
   };
 
   let jobDetails: Partial<Record<JobName, JobDetails>> = {
-    [JobName.ThumbnailGeneration]: {
-      icon: mdiFileJpgBox,
-      title: $getJobName(JobName.ThumbnailGeneration),
-      subtitle: $t('admin.thumbnail_generation_job_description'),
-      allText: $t('all'),
+    [JobName.Library]: {
+      icon: mdiLibraryShelves,
+      title: $getJobName(JobName.Library),
+      subtitle: $t('admin.library_tasks_description'),
+      allText: $t('rescan'),
       missingText: $t('missing'),
     },
+
     [JobName.MetadataExtraction]: {
       icon: mdiTable,
       title: $getJobName(JobName.MetadataExtraction),
@@ -75,12 +76,7 @@
       allText: $t('all'),
       missingText: $t('missing'),
     },
-    [JobName.Library]: {
-      icon: mdiLibraryShelves,
-      title: $getJobName(JobName.Library),
-      subtitle: $t('admin.library_tasks_description'),
-      missingText: $t('rescan'),
-    },
+
     [JobName.Sidecar]: {
       title: $getJobName(JobName.Sidecar),
       icon: mdiFileXmlBox,
@@ -88,6 +84,13 @@
       allText: $t('sync'),
       missingText: $t('discover'),
       disabled: !$featureFlags.sidecar,
+    },
+    [JobName.ThumbnailGeneration]: {
+      icon: mdiFileJpgBox,
+      title: $getJobName(JobName.ThumbnailGeneration),
+      subtitle: $t('admin.thumbnail_generation_job_description'),
+      allText: $t('all'),
+      missingText: $t('missing'),
     },
     [JobName.SmartSearch]: {
       icon: mdiImageSearch,
@@ -141,6 +144,30 @@
       icon: mdiFolderMove,
       title: $getJobName(JobName.Migration),
       subtitle: $t('admin.migration_job_description'),
+      missingText: $t('start'),
+    },
+    [JobName.PersonDataScrapping]: {
+      icon: mdiTagFaces,
+      title: $getJobName(JobName.PersonDataScrapping),
+      subtitle: $t('admin.person_data_scrapping_job_description'),
+      missingText: $t('start'),
+    },
+    [JobName.SocialMediaDataScrapping]: {
+      icon: mdiTagFaces,
+      title: $getJobName(JobName.SocialMediaDataScrapping),
+      subtitle: $t('admin.social_media_data_scrapping_job_description'),
+      missingText: $t('start'),
+    },
+    [JobName.SocialMediaDataScrappingWeb]: {
+      icon: mdiTagFaces,
+      title: $getJobName(JobName.SocialMediaDataScrappingWeb),
+      subtitle: $t('admin.social_media_data_scrapping_job_description'),
+      missingText: $t('start'),
+    },
+    [JobName.LocationDataScrappingWeb]: {
+      icon: mdiTagFaces,
+      title: $getJobName(JobName.LocationDataScrappingWeb),
+      subtitle: $t('admin.location_data_scrapping_job_description'),
       missingText: $t('start'),
     },
   };

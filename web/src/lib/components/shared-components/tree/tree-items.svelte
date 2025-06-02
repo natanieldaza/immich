@@ -6,16 +6,27 @@
     tree: TreeNode;
     active: string;
     icons: { default: string; active: string };
+    isMenu: boolean;
+    currentPath: string;
     getLink: (path: string) => string;
   }
 
-  let { tree, active, icons, getLink }: Props = $props();
+  let {
+    items,
+    parent = '',
+    active = '',
+    icons,
+    getLink,
+    getColor = () => undefined,
+    isMenu = false,
+    currentPath = '',
+  }: Props = $props();
 </script>
 
 <ul class="list-none ms-2">
   {#each tree.children as node (node.color ? node.path + node.color : node.path)}
     <li>
-      <Tree {node} {icons} {active} {getLink} />
+      <Tree {node} {icons} {active} {getLink} {isMenu} {currentPath} />
     </li>
   {/each}
 </ul>

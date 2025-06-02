@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>SitesUrl Saver - Options</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 2rem;
+        }
+
+        input {
+            width: 300px;
+            padding: 0.5rem;
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Set Auth Token</h1>
+    <input id="token" type="text" placeholder="Bearer token" />
+    <button id="save">Save</button>
+    <p id="status" style="color: green;"></p>
+
+    <script>
+        const tokenInput = document.getElementById("token");
+        const saveBtn = document.getElementById("save");
+        const statusText = document.getElementById("status");
+
+        // Load existing token on page load
+        chrome.storage.local.get("authToken", ({ authToken }) => {
+            if (authToken) tokenInput.value = authToken;
+        });
+
+        // Save the token
+        saveBtn.onclick = () => {
+            const token = tokenInput.value.trim();
+            if (!token) {
+                statusText.textContent = "❌ Token cannot be empty.";
+                return;
+            }
+
+            chrome.storage.local.set({ authToken: token }, () => {
+                statusText.textContent = "✅ Token saved successfully.";
+                setTimeout(() => statusText.textContent = "", 3000);
+            });
+        };
+    </script>
+</body>
+
+</html>

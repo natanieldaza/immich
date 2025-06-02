@@ -184,17 +184,50 @@ export interface IEntityJob extends IBaseJob {
   id: string;
   source?: JobSource;
   notify?: boolean;
+  directoryId?: string;
+}
+export interface ISidecarJob extends IEntityJob {
+  directoryId?: string;
+}
+
+export interface IPersonJob extends IBaseJob {
+  personId?: string;
+  directoryId?: string;
+}
+
+export interface IWebGeoLocationJob extends IBaseJob {
+  locationId: string;
+  locationName: string | null;
+}
+
+export interface ISocialMediaJob extends IBaseJob {
+  socialMediaId: string;
+  hashId: string;
+  platform: string;
 }
 
 export interface IAssetDeleteJob extends IEntityJob {
   deleteOnDisk: boolean;
 }
 
+export interface IAssetMoveJob extends IEntityJob {
+  baseDestination: string;
+}
+
 export interface ILibraryFileJob {
   libraryId: string;
+  directoryId?: string;
   paths: string[];
   progressCounter?: number;
   totalAssets?: number;
+  force?: boolean;
+}
+
+export interface ILibraryDirectoryJob extends IBaseJob {
+  libraryId: string;
+  directories: string[];
+  progressCounter?: number;
+  totalDirectories?: number;
 }
 
 export interface ILibraryBulkIdsJob {
@@ -204,6 +237,7 @@ export interface ILibraryBulkIdsJob {
   assetIds: string[];
   progressCounter: number;
   totalAssets: number;
+  directoryId?: string;
 }
 
 export interface IBulkEntityJob {
@@ -212,6 +246,10 @@ export interface IBulkEntityJob {
 
 export interface IDeleteFilesJob extends IBaseJob {
   files: Array<string | null | undefined>;
+}
+
+export interface IMoveFilesJob extends IBaseJob {
+  files: Array<[string, string]>;
 }
 
 export interface ISidecarWriteJob extends IEntityJob {
@@ -223,6 +261,10 @@ export interface ISidecarWriteJob extends IEntityJob {
   tags?: true;
 }
 
+export interface ISidecarPersonWriteJob extends IBaseJob {
+  personId?: string;
+  directoryId?: string;
+}
 export interface IDeferrableJob extends IEntityJob {
   deferred?: boolean;
 }
@@ -306,7 +348,7 @@ export type JobItem =
 
   // Sidecar Scanning
   | { name: JobName.QUEUE_SIDECAR; data: IBaseJob }
-  | { name: JobName.SIDECAR_DISCOVERY; data: IEntityJob }
+  | { name: JobName.SIDECAR_DISCOVERY; data: ISidecarJob }
   | { name: JobName.SIDECAR_SYNC; data: IEntityJob }
   | { name: JobName.SIDECAR_WRITE; data: ISidecarWriteJob }
 
@@ -332,6 +374,7 @@ export type JobItem =
 
   // Filesystem
   | { name: JobName.DELETE_FILES; data: IDeleteFilesJob }
+  | { name: JobName.MOVE_FILES; data: IMoveFilesJob }
 
   // Cleanup
   | { name: JobName.CLEAN_OLD_AUDIT_LOGS; data?: IBaseJob }
@@ -344,9 +387,12 @@ export type JobItem =
   | { name: JobName.PERSON_CLEANUP; data?: IBaseJob }
   | { name: JobName.ASSET_DELETION; data: IAssetDeleteJob }
   | { name: JobName.ASSET_DELETION_CHECK; data?: IBaseJob }
+  | { name: JobName.ASSET_MOVING; data: IAssetMoveJob }
 
   // Library Management
+  | { name: JobName.LIBRARY_SYNC_DIRECTORIES; data: ILibraryDirectoryJob }
   | { name: JobName.LIBRARY_SYNC_FILES; data: ILibraryFileJob }
+  | { name: JobName.LIBRARY_QUEUE_SYNC_DIRECTORIES; data: IEntityJob }
   | { name: JobName.LIBRARY_QUEUE_SYNC_FILES; data: IEntityJob }
   | { name: JobName.LIBRARY_QUEUE_SYNC_ASSETS; data: IEntityJob }
   | { name: JobName.LIBRARY_SYNC_ASSETS; data: ILibraryBulkIdsJob }
@@ -362,7 +408,33 @@ export type JobItem =
   | { name: JobName.NOTIFY_SIGNUP; data: INotifySignupJob }
 
   // Version check
-  | { name: JobName.VERSION_CHECK; data: IBaseJob };
+  | { name: JobName.VERSION_CHECK; data: IBaseJob }
+
+  // Memories
+  | { name: JobName.MEMORIES_CLEANUP; data?: IBaseJob }
+  | { name: JobName.MEMORIES_CREATE; data?: IBaseJob }
+
+  //person data scrapping
+  | { name: JobName.QUEUE_PERSON_DATA_SCRAPPING; data: IBaseJob }
+  | { name: JobName.PERSON_DATA_SCRAPPING; data: IPersonJob }
+  | { name: JobName.QUEUE_PERSON_SIDECAR_WRITE; data: IBaseJob }
+  | { name: JobName.PERSON_SIDECAR_DISCOVERY; data: IPersonJob }
+  | { name: JobName.PERSON_SIDECAR_SYNC; data: IPersonJob }
+  | { name: JobName.PERSON_SIDECAR_WRITE; data: ISidecarPersonWriteJob }
+
+  //SOCIAL MEDIA DATA SCRAPPING
+  | { name: JobName.QUEUE_SOCIAL_MEDIA_DATA_SCRAPPING; data: IBaseJob }
+  | { name: JobName.SOCIAL_MEDIA_DATA_SCRAPPING; data: IBaseJob }
+
+  //SOCIAL MEDIA DATA SCRAPPING WEB
+  | { name: JobName.QUEUE_SOCIAL_MEDIA_DATA_SCRAPPING_WEB; data: IBaseJob }
+  | { name: JobName.SOCIAL_MEDIA_DATA_SCRAPPING_WEB; data: ISocialMediaJob }
+
+  //LOCATION DATA SCRAPPING WEB
+  | { name: JobName.QUEUE_LOCATION_DATA_SCRAPPING_WEB; data: IBaseJob }
+  | { name: JobName.LOCATION_DATA_SCRAPPING_WEB; data: IWebGeoLocationJob };
+
+
 
 export type VectorExtension = (typeof VECTOR_EXTENSIONS)[number];
 
