@@ -88,6 +88,14 @@
       const data = await getAssetInfo({ id: asset.id });
       people = data?.people || [];
       unassignedFaces = data?.unassignedFaces || [];
+      ownerPerson = data?.ownerPerson;
+      mainPerson = data?.mainPerson;
+      taggedPeople = data?.taggedPeople || [];
+      mentionedPeople = data?.mentionedPeople || [];
+      edgeRelatedPeople = data?.edgeRelatedPeople || [];
+      urlPost = data?.assetUrl;
+      locationName = data?.locationName;
+      locationUrl = data?.locationUrl;
     }
   };
 
@@ -107,6 +115,14 @@
   );
 
   let people = $state(asset.people || []);
+  let ownerPerson = $state(asset.ownerPerson);
+  let mainPerson = $state(asset.mainPerson);
+  let taggedPeople = $state(asset.taggedPeople || []);
+  let mentionedPeople = $state(asset.mentionedPeople || []);
+  let edgeRelatedPeople = $state(asset.edgeRelatedPeople || []);
+  let urlPost = $state(asset.assetUrl);
+  let locationName = $state(asset.locationName);
+  let locationUrl = $state(asset.locationUrl);
   let unassignedFaces = $state(asset.unassignedFaces || []);
   let showingHiddenPeople = $state(false);
   let timeZone = $derived(asset.exifInfo?.timeZone);
@@ -130,6 +146,14 @@
     await getAssetInfo({ id: asset.id }).then((data) => {
       people = data?.people || [];
       unassignedFaces = data?.unassignedFaces || [];
+      ownerPerson = data?.ownerPerson;
+      mainPerson = data?.mainPerson;
+      taggedPeople = data?.taggedPeople || [];
+      mentionedPeople = data?.mentionedPeople || [];
+      edgeRelatedPeople = data?.edgeRelatedPeople || [];
+      urlPost = data?.assetUrl;
+      locationName = data?.locationName;
+      locationUrl = data?.locationUrl;
     });
     showEditFaces = false;
   };
@@ -292,7 +316,298 @@
           {/if}
         {/each}
       </div>
-    </section>
+    
+      <div class="mt-2 flex flex-wrap gap-2">
+        {#if ownerPerson && (showingHiddenPeople || !ownerPerson.isHidden)}
+        <h2>OWNER PERSON</h2>
+        <a
+          class="w-[90px]"
+          href={ownerPerson.url} target="_blank" rel="noopener noreferrer"
+        >
+          <div class="relative">
+            <ImageThumbnail
+              curve
+              shadow
+              url={getPeopleThumbnailUrl(ownerPerson)}
+              altText={ownerPerson.name}
+              title={ownerPerson.name}
+              widthStyle="30px"
+              heightStyle="30px"
+              hidden={ownerPerson.isHidden}
+            />
+          </div>
+          <p class="mt-1 truncate font-medium" href={ownerPerson.url} title={ownerPerson.name}>{ownerPerson.name}</p>
+          
+            
+          {#if ownerPerson.birthDate}
+            {@const personBirthDate = DateTime.fromISO(ownerPerson.birthDate)}
+            {@const age = Math.floor(DateTime.fromISO(asset.localDateTime).diff(personBirthDate, 'years').years)}
+            {@const ageInMonths = Math.floor(
+              DateTime.fromISO(asset.localDateTime).diff(personBirthDate, 'months').months,
+            )}
+            {#if age >= 0}
+              <p
+                class="font-light"
+                title={personBirthDate.toLocaleString(
+                  {
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric',
+                  },
+                  { locale: $locale },
+                )}
+              >
+                {#if ageInMonths <= 11}
+                  {$t('age_months', { values: { months: ageInMonths } })}
+                {:else if ageInMonths > 12 && ageInMonths <= 23}
+                  {$t('age_year_months', { values: { months: ageInMonths - 12 } })}
+                {:else}
+                  {$t('age_years', { values: { years: age } })}
+                {/if}
+              </p>
+            {/if}
+          {/if}
+        </a>
+      {/if}
+      </div>
+      
+        {#if mainPerson && ( showingHiddenPeople || !mainPerson.isHidden)}
+        <div>
+          <h2>MAIN PERSON</h2>
+        </div>
+        
+        <div class="mt-2 flex flex-wrap gap-2">  
+        <a
+          class="w-[90px]"
+          href={mainPerson.url} target="_blank" rel="noopener noreferrer"
+        >
+          <div class="relative">
+            <ImageThumbnail
+              curve
+              shadow
+              url={getPeopleThumbnailUrl(mainPerson)}
+              altText={mainPerson.name}
+              title={mainPerson.name}
+              widthStyle="30px"
+              heightStyle="30px"
+              hidden={mainPerson.isHidden}
+            />
+          </div>
+          <p class="mt-1 truncate font-medium" href={mainPerson.url} title={mainPerson.name}>{mainPerson.name}</p>
+          {#if mainPerson.birthDate}
+            {@const personBirthDate = DateTime.fromISO(mainPerson.birthDate)}
+            {@const age = Math.floor(DateTime.fromISO(asset.localDateTime).diff(personBirthDate, 'years').years)}
+            {@const ageInMonths = Math.floor(
+              DateTime.fromISO(asset.localDateTime).diff(personBirthDate, 'months').months,
+            )}
+            {#if age >= 0}
+              <p
+                class="font-light"
+                title={personBirthDate.toLocaleString(
+                  {
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric',
+                  },
+                  { locale: $locale },
+                )}
+              >
+                {#if ageInMonths <= 11}
+                  {$t('age_months', { values: { months: ageInMonths } })}
+                {:else if ageInMonths > 12 && ageInMonths <= 23}
+                  {$t('age_year_months', { values: { months: ageInMonths - 12 } })}
+                {:else}
+                  {$t('age_years', { values: { years: age } })}
+                {/if}
+              </p>
+            {/if}
+          {/if}
+        </a>
+      </div>  
+      {/if}
+      
+      
+        {#if taggedPeople.length > 0}
+        <div>
+          <h2>TAGGED PEOPLE</h2>
+        </div>
+        {/if}
+        <div class="mt-2 flex flex-wrap gap-2">  
+          {#each taggedPeople as person, index (person.id)}
+            {#if showingHiddenPeople || !person.isHidden}
+  
+              <a
+                class="w-[90px]"
+                href={person.url} target="_blank" rel="noopener noreferrer"
+              >
+                <div class="relative">
+                  <ImageThumbnail
+                    curve
+                    shadow
+                    url={getPeopleThumbnailUrl(person)}
+                    altText={person?.name || person?.username || 'Unknown'}
+                    title={person?.name || person?.username || 'Unknown'}
+                    widthStyle="30px"
+                    heightStyle="30px"
+                    hidden={person.isHidden}
+                  />
+                </div>
+  
+                
+                <p class="mt-1 truncate font-medium"  title={person.name || person.username || '' }>{person.name || person.username || ''}</p>
+                {#if person.birthDate}
+                  {@const personBirthDate = DateTime.fromISO(person.birthDate)}
+                  {@const age = Math.floor(DateTime.fromISO(asset.localDateTime).diff(personBirthDate, 'years').years)}
+                  {@const ageInMonths = Math.floor(
+                    DateTime.fromISO(asset.localDateTime).diff(personBirthDate, 'months').months,
+                  )}
+                  {#if age >= 0}
+                    <p
+                      class="font-light"
+                      title={personBirthDate.toLocaleString(
+                        {
+                          month: 'long',
+                          day: 'numeric',
+                          year: 'numeric',
+                        },
+                        { locale: $locale },
+                      )}
+                    >
+                      {#if ageInMonths <= 11}
+                        {$t('age_months', { values: { months: ageInMonths } })}
+                      {:else if ageInMonths > 12 && ageInMonths <= 23}
+                        {$t('age_year_months', { values: { months: ageInMonths - 12 } })}
+                      {:else}
+                        {$t('age_years', { values: { years: age } })}
+                      {/if}
+                    </p>
+                  {/if}
+                {/if}
+              </a>
+            {/if}
+          {/each}
+        </div>
+        
+        {#if mentionedPeople.length > 0}
+        <div>
+          <h2>MENTIONED PEOPLE</h2>
+        </div>
+        {/if}
+          <div class="mt-2 flex flex-wrap gap-2">
+          {#each mentionedPeople as person, index (person.id)}
+            {#if showingHiddenPeople || !person.isHidden}
+              <a
+                class="w-[90px]"
+         
+                href={person.url} target="_blank" rel="noopener noreferrer"
+              >
+              
+                <div class="relative">
+                  <ImageThumbnail
+                    curve
+                    shadow
+                    url={getPeopleThumbnailUrl(person)}
+                    altText={person.name}
+                    title={person.name}
+                    widthStyle="30px"
+                    heightStyle="30px"
+                    hidden={person.isHidden}
+                  />
+                </div>
+                
+                <p class="mt-1 truncate font-medium" href={person.url} title={person.name || person.username || '' }>{person.name || person.username || ''}</p>
+                {#if person.birthDate}
+                  {@const personBirthDate = DateTime.fromISO(person.birthDate)}
+                  {@const age = Math.floor(DateTime.fromISO(asset.localDateTime).diff(personBirthDate, 'years').years)}
+                  {@const ageInMonths = Math.floor(
+                    DateTime.fromISO(asset.localDateTime).diff(personBirthDate, 'months').months,
+                  )}
+                  {#if age >= 0}
+                    <p
+                      class="font-light"
+                      title={personBirthDate.toLocaleString(
+                        {
+                          month: 'long',
+                          day: 'numeric',
+                          year: 'numeric',
+                        },
+                        { locale: $locale },
+                      )}
+                    >
+                      {#if ageInMonths <= 11}
+                        {$t('age_months', { values: { months: ageInMonths } })}
+                      {:else if ageInMonths > 12 && ageInMonths <= 23}
+                        {$t('age_year_months', { values: { months: ageInMonths - 12 } })}
+                      {:else}
+                        {$t('age_years', { values: { years: age } })}
+                      {/if}
+                    </p>
+                  {/if}
+                {/if}
+              </a>
+            {/if}
+          {/each}
+        </div>
+        
+        {#if edgeRelatedPeople.length > 0}
+        <div>
+          <h2>UNASSIGNED PEOPLE</h2>
+        </div>
+        {/if}
+        
+          <div class="mt-2 flex flex-wrap gap-2">
+          {#each edgeRelatedPeople as person, index (person.id)}
+            {#if showingHiddenPeople || !person.isHidden}
+              <a
+                class="w-[90px]"
+                href={person.url} target="_blank" rel="noopener noreferrer"
+              >
+                <div class="relative">
+                  <ImageThumbnail
+                    curve
+                    shadow
+                    url={getPeopleThumbnailUrl(person)}
+                    altText={person.name}
+                    title={person.name}
+                    widthStyle="30px"
+                    heightStyle="30px"
+                    hidden={person.isHidden}
+                  />
+                </div>
+                <p class="mt-1 truncate font-medium" href={person.url} title={person.name || person.username || '' }>{person.name || person.username || ''}</p>
+                {#if person.birthDate}
+                  {@const personBirthDate = DateTime.fromISO(person.birthDate)}
+                  {@const age = Math.floor(DateTime.fromISO(asset.localDateTime).diff(personBirthDate, 'years').years)}
+                  {@const ageInMonths = Math.floor(
+                    DateTime.fromISO(asset.localDateTime).diff(personBirthDate, 'months').months,
+                  )}
+                  {#if age >= 0}
+                    <p
+                      class="font-light"
+                      title={personBirthDate.toLocaleString(
+                        {
+                          month: 'long',
+                          day: 'numeric',
+                          year: 'numeric',
+                        },
+                        { locale: $locale },
+                      )}
+                    >
+                      {#if ageInMonths <= 11}
+                        {$t('age_months', { values: { months: ageInMonths } })}
+                      {:else if ageInMonths > 12 && ageInMonths <= 23}
+                        {$t('age_year_months', { values: { months: ageInMonths - 12 } })}
+                      {:else}
+                        {$t('age_years', { values: { years: age } })}
+                      {/if}
+                    </p>
+                  {/if}
+                {/if}
+              </a>
+            {/if}
+          {/each}
+        </div>
+      </section>
   {/if}
 
   <div class="px-4 py-4">
@@ -302,6 +617,13 @@
       </div>
     {:else}
       <p class="text-sm">{$t('no_exif_info_available').toUpperCase()}</p>
+    {/if}
+
+    {#if urlPost}
+    <div class="flex h-10 w-full items-center justify-between text-sm">
+      <a href="{urlPost}" target="_blank" rel="noopener noreferrer"> URL: {urlPost}</a>
+        
+    </div>
     {/if}
 
     {#if dateTime}
@@ -476,6 +798,12 @@
           </div>
         </div>
       </div>
+    {/if}
+    {#if locationName}
+    <div class="flex h-10 w-full items-center justify-between text-sm">
+      <a href="{locationUrl}" target="_blank" rel="noopener noreferrer"> {locationName}</a>
+        
+    </div>
     {/if}
 
     <DetailPanelLocation {isOwner} {asset} />

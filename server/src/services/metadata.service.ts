@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { ContainerDirectoryItem, Maybe, Tags } from 'exiftool-vendored';
 import { firstDateTime } from 'exiftool-vendored/dist/FirstDateTime';
+import * as countries from 'i18n-iso-countries';
+import * as enLocale from 'i18n-iso-countries/langs/en.json';
 import { Insertable } from 'kysely';
-import _ from 'lodash';
+import _, { mergeWith } from 'lodash';
 import { Duration } from 'luxon';
-import { Stats } from 'node:fs';
+import { promises as fs, Stats } from 'node:fs';
 import { constants } from 'node:fs/promises';
 import path from 'node:path';
 import { JOBS_ASSET_PAGINATION_SIZE } from 'src/constants';
@@ -12,6 +14,8 @@ import { StorageCore } from 'src/cores/storage.core';
 import { Asset, AssetFace } from 'src/database';
 import { AssetFaces, Exif, Person } from 'src/db';
 import { OnEvent, OnJob } from 'src/decorators';
+import { AuthDto } from 'src/dtos/auth.dto';
+import { PersonWithFacesResponseDto, SideCarPersonDto } from 'src/dtos/person.dto';
 import {
   AssetType,
   AssetVisibility,
@@ -20,12 +24,14 @@ import {
   ImmichWorker,
   JobName,
   JobStatus,
+  LogLevel,
   QueueName,
   SourceType,
 } from 'src/enum';
 import { ArgOf } from 'src/repositories/event.repository';
 import { ReverseGeocodeResult } from 'src/repositories/map.repository';
 import { ImmichTags } from 'src/repositories/metadata.repository';
+import { SidecarPerson } from 'src/repositories/person.repository';
 import { BaseService } from 'src/services/base.service';
 import { JobItem, JobOf } from 'src/types';
 import { isFaceImportEnabled } from 'src/utils/misc';
@@ -94,6 +100,9 @@ type Dates = {
   dateTimeOriginal: Date;
   localDateTime: Date;
 };
+interface JsonData {
+  [key: string]: any; // Allows accessing any property dynamically
+}
 
 @Injectable()
 export class MetadataService extends BaseService {
@@ -120,7 +129,7 @@ export class MetadataService extends BaseService {
 
   private async init() {
     this.logger.log('Initializing metadata service');
-
+    this.logger.setLogLevel(LogLevel.DEBUG);
     try {
       await this.jobRepository.pause(QueueName.METADATA_EXTRACTION);
       await this.databaseRepository.withLock(DatabaseLock.GeodataImport, () => this.mapRepository.init());
@@ -182,6 +191,464 @@ export class MetadataService extends BaseService {
     return JobStatus.SUCCESS;
   }
 
+
+  private async ExifFromJsonTag(jsonData: JsonData): Promise<ImmichTags> {
+
+
+    const imichtags: ImmichTags = {
+      DateTimeOriginal: jsonData?.date || undefined,
+      ShortCode: jsonData?.shortcode || undefined,
+      ImageWidth: jsonData?.width || undefined,
+      ImageHeight: jsonData?.height || undefined,
+
+      TaggedPeople: Array.isArray(jsonData?.tagged_users)
+        ? jsonData.tagged_users.map(user => ({
+          id: user.id,
+          TaggedUserName: user.username,
+          FullName: user.full_name,
+        }))
+        : undefined,
+
+
+      DateTimeCreated: jsonData?.post_date || undefined,
+
+      Description: jsonData?.description || undefined,
+
+      TagsList: jsonData?.tags ? jsonData.tags.map((tag: string) => tag.replace(/^#/, "")) : undefined,
+
+      LocationId: jsonData?.location_id || undefined,
+      LocationName: jsonData?.location_slug || undefined,
+      LocationUrl: jsonData?.location_url || undefined,
+
+      Posts: jsonData?.user?.count_media || undefined,
+      Followers: jsonData?.user?.count_followed || undefined,
+      Following: jsonData?.user?.count_follow || undefined,
+
+      OwnerID: jsonData?.username || undefined,
+      OwnerName: jsonData?.fullname || undefined,
+      SocialMediaOwnerId: jsonData?.owner_id || undefined,
+
+      TaggedUserName: jsonData?.tagged_username || undefined,
+
+      TaggedFullName: jsonData?.tagged_full_name || undefined,
+
+      FileName: jsonData?.filename || undefined,
+      FileTypeExtension: jsonData?.extension || undefined,
+
+      Coauthors: Array.isArray(jsonData?.coauthors)
+        ? jsonData.coauthors.map(author => ({
+          id: author.id,
+          TaggedUserName: author.username,
+          FullName: author.full_name,
+        }))
+        : undefined,
+
+
+      HighLightTitle: jsonData?.highlight_title || undefined,
+      Biography: jsonData?.biography || undefined,
+
+      BioLinks: jsonData?.user?.bio_links
+        ?.filter((link: { title?: string; lynx_url?: string; url?: string; link_type?: string }) => link?.lynx_url && link?.link_type) // Ensure valid entries
+        ?.map((link: { title?: string; lynx_url: string; url?: string; link_type: string }) => ({
+          title: link.title || "",  // Default empty string if missing
+          lynx_url: link.lynx_url,
+          url: link.url || undefined,  // Set `undefined` if missing
+          link_type: link.link_type
+        })) || undefined,
+
+      FbProfileBioLink: jsonData?.user?.fb_profile_biolink || undefined,
+
+      SelfData: jsonData?.user?.biography_with_entities?.raw_text || undefined,
+
+      BiographyWithEntities: jsonData?.user?.biography_with_entities
+        ? {
+          raw_text: jsonData.user.biography_with_entities.raw_text,
+          mentions: jsonData.user.biography_with_entities.entities
+            ?.map((entity: { user?: { username: string } }) => entity?.user?.username)
+            .filter((username: string | undefined) => username !== undefined) || [],
+          hashtags: jsonData.user.biography_with_entities.entities
+            ?.map((entity: { hashtag?: { name: string } }) => entity?.hashtag?.name)
+            .filter((name: string | undefined) => name !== undefined) || [],
+
+        }
+        : undefined,
+
+
+
+
+      ExternalUrl: jsonData?.user?.external_url || undefined,
+
+
+      Fbid: jsonData?.user?.fbid || undefined,
+
+      UserFullName: jsonData?.user?.full_name || undefined,
+      UserId: jsonData?.user?.id || undefined,
+      // "user.group_metadata": "unknown",
+      // "user.id": "string",
+
+      // "user.business_contact_method": "string",
+      // "user.business_email": "unknown",
+      // "user.business_phone_number": "unknown",
+
+      UserName: jsonData?.user?.username || undefined,
+      // "user.connected_fb_page": "unknown",
+
+      // "user.has_onboarded_to_text_post_app": "int",
+      // "user.show_text_post_app_badge": [
+      //     "unknown",
+      //     "int"
+      // ],
+
+
+      // Extract related profiles
+      RelatedProfiles: jsonData?.user?.edge_related_profiles?.edges
+        ?.filter((edge: { node?: any }) => edge.node) // Filter out any invalid entries
+        .map((edge: {
+          node: {
+            id: string;
+            full_name: string;
+            is_private: boolean;
+            is_verified: boolean;
+            profile_pic_url?: string;
+            username: string;
+          }
+        }) => ({
+          id: edge.node.id,
+          full_name: edge.node.full_name,
+          is_private: edge.node.is_private,
+          is_verified: edge.node.is_verified,
+          profile_pic_url: edge.node.profile_pic_url || undefined,
+          username: edge.node.username
+        })) || undefined,
+
+
+      // "user.category": "string",
+      Category: jsonData?.category || undefined,
+      SubCategorie: jsonData?.subcategory || undefined,
+      Post_url: jsonData?.post_url || undefined,
+    };
+
+
+    // Wrap the result in a Promise and return
+    return Promise.resolve(imichtags);
+  }
+
+  private async processLocation(tags: ImmichTags, asset: Asset): Promise<void> {
+
+    const locationId = tags.LocationId;
+    const locationName = tags.LocationName;
+    const locationUrl = tags.LocationUrl;
+    if (locationId && locationName) {
+      await this.geodataPlacesRepository.addInstagramLocationId(
+        String(locationId),
+        locationName ?? null,
+        locationUrl ?? null,
+        asset
+      );
+    }
+  }
+
+  private async processSocialMedia(tags: ImmichTags, asset: Asset): Promise<void> {
+
+    // Process the main social media
+
+    this.socialMediaRepository.addOrUpdateSocialMedia(tags.OwnerName ?? '', String(tags.OwnerID) ?? '', String(tags.SocialMediaOwnerId) ?? '', tags.Category ?? '', asset.ownerId, '', '', '', 0, 0, 0, asset.originalPath);
+
+    // Process the second social media
+
+    this.socialMediaRepository.addOrUpdateSocialMedia(String(tags.UserFullName ?? ''), String(tags.UserName ?? ''), String(tags.UserId ?? ''), tags.Category ?? '', asset.ownerId, String(tags.SelfData ?? ''), '', '', Number(tags.Posts) ?? 0, Number(tags.Followers) ?? 0, Number(tags.Following) ?? 0, asset.originalPath);
+
+
+    if (tags.RelatedProfiles) {
+      await Promise.all(tags.RelatedProfiles.map(async profile => {
+        this.socialMediaRepository.addOrUpdateSocialMedia(profile.full_name ?? '', profile.username ?? '', profile.id ?? '', 'instagram', asset.ownerId, '', '', '', 0, 0, 0, asset.originalPath);
+      }));
+    }
+
+    if (tags.Coauthors) {
+      await Promise.all(tags.Coauthors.map(async author => {
+        this.socialMediaRepository.addOrUpdateSocialMedia(author.FullName ?? '', author.TaggedUserName ?? '', String(author.id) ?? '', 'instagram', asset.ownerId, '', '', '', 0, 0, 0, asset.originalPath);
+      }));
+    }
+
+    if (tags.TaggedPeople) {
+      await Promise.all(tags.TaggedPeople.map(async tagged => {
+        this.socialMediaRepository.addOrUpdateSocialMedia(tagged.FullName ?? '', tagged.TaggedUserName ?? '', String(tagged.id) ?? '', 'instagram', asset.ownerId, '', '', '', 0, 0, 0, asset.originalPath);
+      }));
+    }
+
+    if (tags.BiographyWithEntities?.mentions) {
+      await Promise.all(tags.BiographyWithEntities.mentions.map(async mention => {
+        this.socialMediaRepository.addOrUpdateSocialMedia(mention ?? '', mention ?? '', '', 'instagram', asset.ownerId, '', '', '', 0, 0, 0, asset.originalPath);
+      }));
+    }
+
+
+    if (tags.BioLinks) {
+      await Promise.all(tags.BioLinks.map(async link => {
+        let platform = this.socialMediaRepository.getPlatformFromUrl(String(link.url));
+        if (!platform) {
+          platform = 'not_found';
+        }
+        if (platform === 'tiktok') {
+          this.socialMediaRepository.addOrUpdateSocialMedia(link.title ?? '', await this.socialMediaRepository.resolveTiktokRedirect(String(link.url)) ?? '', '', platform ?? '', asset.ownerId, '', '', link.url ?? '', 0, 0, 0, asset.originalPath);
+        }
+        else if (platform === 'wa') {
+          platform = 'whatsapp';
+          this.socialMediaRepository.addOrUpdateSocialMedia(link.title ?? '', this.socialMediaRepository.getWhatsappNumberFromUrl(String(link.url)) ?? '', '', platform ?? '', asset.ownerId, '', '', link.url ?? '', 0, 0, 0, asset.originalPath);
+        }
+        else if (platform === 'facebook') {
+
+          this.socialMediaRepository.addOrUpdateSocialMedia(link.title ?? '', this.socialMediaRepository.getFacebookIdFromUrl(String(link.url)) ?? '', '', platform ?? '', asset.ownerId, '', '', link.url ?? '', 0, 0, 0, asset.originalPath);
+        }
+        else {
+          this.socialMediaRepository.addOrUpdateSocialMedia(link.title ?? '', this.socialMediaRepository.getInstagramIdFromUrl(String(link.url)) ?? '', '', platform ?? '', asset.ownerId, '', '', link.url ?? '', 0, 0, 0, asset.originalPath);
+        }
+
+      }));
+    }
+
+    this.logger.verbose("----------------------------fb profile bio link---------------------------------");
+
+    if (tags.FbProfileBioLink) {
+      this.socialMediaRepository.addOrUpdateSocialMedia(tags.FbProfileBioLink.name ?? '', this.socialMediaRepository.getFacebookIdFromUrl(tags.FbProfileBioLink.url), '', 'facebook', asset.ownerId, '', '', tags.FbProfileBioLink.url ?? '', 0, 0, 0, asset.originalPath);
+    }
+  }
+
+  private async processPerson(tags: ImmichTags, asset: Asset): Promise<void> {
+
+    this.logger.verbose(`Processing person for asset ${asset.directoryId}`);
+    let mainPersonname: string = '';
+    let mainPersonId: string = '';
+    let mainPersonhashId: string = '';
+
+    if (tags.SubCategorie === "tagged") {
+      mainPersonname = String(tags.OwnerName ?? '');
+      mainPersonId = String(tags.OwnerID ?? '');
+      mainPersonhashId = String(tags.SocialMediaOwnerId ?? '');
+    }
+    else {
+      if (tags.SubCategorie === "posts" || tags.SubCategorie === "reels") {
+
+        if (tags.OwnerID !== tags.UserName) {
+          mainPersonname = String(tags.OwnerName ?? '');
+          mainPersonId = String(tags.OwnerID ?? '');
+          mainPersonhashId = String(tags.SocialMediaOwnerId ?? '');
+        }
+        else {
+          mainPersonname = String(tags.UserFullName ?? '');
+          mainPersonId = String(tags.UserName ?? '');
+          mainPersonhashId = String(tags.UserId ?? '');
+        }
+      }
+      else {
+        mainPersonname = String(tags.UserFullName ?? '');
+        mainPersonId = String(tags.UserName ?? '');
+        mainPersonhashId = String(tags.UserId ?? '');
+      }
+    }
+    this.logger.verbose(`Main person name: ${mainPersonname} asset ${asset.originalPath}`);
+    this.logger.verbose(`Processing person with ID: ${mainPersonId} asset ${asset.originalPath}`);
+    this.logger.verbose(`Processing person with hash ID: ${mainPersonhashId} asset ${asset.originalPath}`);
+    this.personRepository.addPerson(
+      String(mainPersonname ?? ''),
+      String(mainPersonId ?? ''),
+      String(mainPersonhashId ?? ''),
+      '',
+      '',
+      '',
+      'main',
+      String(asset.ownerId),
+      String(tags.SelfData ?? ''),
+      asset.originalPath,
+      "instagram",
+      String(asset.directoryId)
+    );
+    if (tags.SubCategorie !== "tagged") {
+      this.logger.verbose(`Processing owner with ID: ${tags.OwnerID} and UserName: ${tags.UserName} asset ${asset.originalPath}`);
+
+      if (tags.UserName !== tags.OwnerID) {
+
+        if (tags.SubCategorie === "post") {
+
+          mainPersonname = String(tags.UserFullName ?? '');
+          mainPersonId = String(tags.UserName ?? '');
+          mainPersonhashId = String(tags.UserId ?? '');
+        }
+        else {
+          mainPersonname = String(tags.OwnerName ?? '');
+          mainPersonId = String(tags.OwnerID ?? '');
+          mainPersonhashId = String(tags.SocialMediaOwnerId ?? '');
+
+        }
+        this.logger.verbose(`Processing person with ID: Creating Person  ${mainPersonId} person ${mainPersonname} hashId ${mainPersonhashId} asset ${asset.originalPath}`);
+
+
+
+        this.personRepository.addPerson(
+          String(mainPersonname ?? ''),
+          String(mainPersonId ?? ''),
+          String(mainPersonhashId ?? ''),
+          '',
+          '',
+          '',
+          'main',
+          String(asset.ownerId),
+          String(tags.Description ?? ''),
+          asset.originalPath,
+          "instagram",
+          String(asset.directoryId)
+        );
+      }
+    }
+
+
+    interface ListToProcess {
+      list: any[];       // The list to process (e.g., tags.RelatedProfiles)
+      key: string;       // The primary key (e.g., "full_name")
+      fallbackKey: string; // The fallback key (e.g., "username")
+      relation: "edge" | "coauthor" | "mentions" | "tagged"; // The relation type
+      id?: string; // Optional ID for the list
+    }
+
+    // Process Lists: RelatedProfiles, Coauthors, TaggedPeople, Biography Mentions
+
+
+    const listsToProcess: ListToProcess[] = [
+      { list: tags.RelatedProfiles ?? [], key: "full_name", fallbackKey: "username", id: "id", relation: "edge" },
+      { list: tags.Coauthors ?? [], key: "FullName", fallbackKey: "TaggedUserName", id: "id", relation: "coauthor" },
+      { list: tags.TaggedPeople ?? [], key: "FullName", fallbackKey: "TaggedUserName", id: "id", relation: "tagged" },
+      { list: tags.BiographyWithEntities?.mentions ?? [], key: "", fallbackKey: "", id: "", relation: "mentions" }, // Handle optional case
+    ];
+
+    for (const { list, key, fallbackKey, relation } of listsToProcess) {
+      if (list) {
+        list.forEach(async (entry) => {
+          const name = key && fallbackKey ? (entry as any)?.[key] || (entry as any)?.[fallbackKey] || '' : entry;
+          const typeOfrelation = relation;
+          if (!name) return;
+          //this.personRepository.addPerson(String(userName ?? ''), name ?? '', typeOfrelation , asset.ownerId, asset.owner);
+          this.personRepository.addPerson(
+            String(mainPersonname ?? ''),
+            String(mainPersonId ?? ''),
+            String(mainPersonhashId ?? ''),
+
+            String(entry[key] ?? ''),
+            String(entry[fallbackKey] ?? ''),
+            String(entry.id ?? ''),
+            typeOfrelation,
+            String(asset.ownerId),
+            '',
+            asset.originalPath,
+            "instagram",
+            String(asset.directoryId)
+          );
+        });
+      }
+    }
+
+    if (tags.BioLinks) {
+      await Promise.all(tags.BioLinks.map(async link => {
+        let platform = this.socialMediaRepository.getPlatformFromUrl(String(link.url));
+        if (!platform) {
+          platform = 'not_found';
+        }
+        if (platform === 'tiktok') {
+
+          this.personRepository.addPerson(
+            String(tags.UserFullName ?? ''),
+            String(tags.UserName ?? ''),
+            String(tags.UserId ?? ''),
+
+            String(link.title ?? ''),
+            String(link.url ?? ''),
+            '',
+            'social_media',
+            String(asset.ownerId),
+            '',
+            asset.originalPath,
+            "tiktok",
+            String(asset.directoryId)
+          );
+        }
+        else if (platform === 'wa') {
+          platform = 'whatsapp';
+          this.personRepository.addPerson(
+            String(tags.UserFullName ?? ''),
+            String(tags.UserName ?? ''),
+            String(tags.UserId ?? ''),
+
+            String(link.title ?? ''),
+            String(link.url ?? ''),
+            '',
+            'social_media',
+            String(asset.ownerId),
+            '',
+            asset.originalPath,
+            "whatsapp",
+            String(asset.directoryId)
+          );
+        }
+        else if (platform === 'facebook') {
+          this.personRepository.addPerson(
+            String(tags.UserFullName ?? ''),
+            String(tags.UserName ?? ''),
+            String(tags.UserId ?? ''),
+
+            String(link.title ?? ''),
+            String(link.url ?? ''),
+            '',
+            'social_media',
+            String(asset.ownerId),
+            '',
+            asset.originalPath,
+            "facebook",
+            String(asset.directoryId)
+          );
+        }
+        else {
+          this.personRepository.addPerson(
+            String(tags.UserFullName ?? ''),
+            String(tags.UserName ?? ''),
+            String(tags.UserId ?? ''),
+
+            String(link.title ?? ''),
+            String(link.url ?? ''),
+            '',
+            'social_media',
+            String(asset.ownerId),
+            '',
+            asset.originalPath,
+            "undefined",
+            String(asset.directoryId)
+          );
+        }
+
+      }));
+    }
+
+    if (tags.FbProfileBioLink) {
+      this.personRepository.addPerson(
+        String(tags.UserFullName ?? ''),
+        String(tags.UserName ?? ''),
+        String(tags.UserId ?? ''),
+
+        String(tags.FbProfileBioLink.name ?? ''),
+        String(tags.FbProfileBioLink.name ?? ''),
+        '',
+        'social_media',
+        String(asset.ownerId),
+        '',
+        asset.originalPath,
+        "facebook",
+        String(asset.directoryId)
+
+      );
+
+    }
+
+  }
+
   @OnJob({ name: JobName.METADATA_EXTRACTION, queue: QueueName.METADATA_EXTRACTION })
   async handleMetadataExtraction(data: JobOf<JobName.METADATA_EXTRACTION>) {
     const [{ metadata, reverseGeocoding }, asset] = await Promise.all([
@@ -192,12 +659,41 @@ export class MetadataService extends BaseService {
     if (!asset) {
       return;
     }
-
-    const [exifTags, stats] = await Promise.all([
+    this.logger.verbose(`Processing metadata for asset ${asset.originalPath}`);
+    const [exifTagsData, stats] = await Promise.all([
       this.getExifTags(asset),
       this.storageRepository.stat(asset.originalPath),
     ]);
-    this.logger.verbose('Exif Tags', exifTags);
+    
+
+    //read json sidecar tags
+    const sidecarJsonTags = await this.getExifJsonTags(asset);
+
+
+    //compare the contents of the two tags and use the one with more data and merge them
+    const customMerge = (objValue: any, srcValue: any) => {
+      if (Array.isArray(objValue) && Array.isArray(srcValue)) {
+        return Array.from(new Set([...objValue, ...srcValue])); // Merge & remove duplicates
+      }
+      return objValue !== undefined ? objValue : srcValue; // Exif wins for other values
+    };
+
+    let exifTags = exifTagsData;
+    if (sidecarJsonTags !== undefined) {
+      exifTags = mergeWith({}, exifTagsData, sidecarJsonTags, customMerge);
+    }
+
+
+
+    if (!exifTags.FileCreateDate || !exifTags.FileModifyDate || exifTags.FileSize === undefined) {
+      this.logger.verbose(`Missing file creation or modification date for asset ${asset.id}: ${asset.originalPath}`);
+      const stat = await this.storageRepository.stat(asset.originalPath);
+      exifTags.FileCreateDate = stat.ctime.toISOString();
+      exifTags.FileModifyDate = stat.mtime.toISOString();
+      exifTags.FileSize = stat.size.toString();
+    }
+
+    //this.logger.verbose('Exif Tags', exifTags);
 
     const dates = this.getDates(asset, exifTags, stats);
 
@@ -256,6 +752,11 @@ export class MetadataService extends BaseService {
       livePhotoCID: (exifTags.ContentIdentifier || exifTags.MediaGroupUUID) ?? null,
       autoStackId: this.getAutoStackId(exifTags),
     };
+    if (sidecarJsonTags !== undefined) {
+      this.processSocialMedia(exifTags, asset);
+      this.processPerson(exifTags, asset);
+      this.processLocation(exifTags, asset);
+    }
 
     const promises: Promise<unknown>[] = [
       this.assetRepository.upsertExif(exifData),
@@ -318,8 +819,9 @@ export class MetadataService extends BaseService {
   }
 
   @OnJob({ name: JobName.SIDECAR_DISCOVERY, queue: QueueName.SIDECAR })
-  handleSidecarDiscovery({ id }: JobOf<JobName.SIDECAR_DISCOVERY>): Promise<JobStatus> {
-    return this.processSidecar(id, false);
+  async handleSidecarDiscovery({ id }: JobOf<JobName.SIDECAR_DISCOVERY>): Promise<JobStatus> {
+    const status = await this.processSidecar(id, false);
+    return status;
   }
 
   @OnEvent({ name: 'asset.tag' })
@@ -444,6 +946,9 @@ export class MetadataService extends BaseService {
       tags = keywords.map(String);
     } else {
       tags = [];
+    }
+    if (exifTags.BiographyWithEntities?.hashtags) {
+      tags = [...tags, ...exifTags.BiographyWithEntities.hashtags.map((tag) => tag.replace(/^#/, ''))];
     }
     return tags;
   }
@@ -686,7 +1191,7 @@ export class MetadataService extends BaseService {
     const existingNames = await this.personRepository.getDistinctNames(asset.ownerId, { withHidden: true });
     const existingNameMap = new Map(existingNames.map(({ id, name }) => [name.toLowerCase(), id]));
     const missing: (Insertable<Person> & { ownerId: string })[] = [];
-    const missingWithFaceAsset: { id: string; ownerId: string; faceAssetId: string }[] = [];
+    const missingWithFaceAsset: { id: string; ownerId: string; faceAssetId: string;}[] = [];
 
     const adjustedRegionInfo = this.orientRegionInfo(tags.RegionInfo, tags.Orientation);
     const imageWidth = adjustedRegionInfo.AppliedToDimensions.W;
@@ -716,7 +1221,7 @@ export class MetadataService extends BaseService {
       facesToAdd.push(face);
       if (!existingNameMap.has(loweredName)) {
         missing.push({ id: personId, ownerId: asset.ownerId, name: region.Name });
-        missingWithFaceAsset.push({ id: personId, ownerId: asset.ownerId, faceAssetId: face.id });
+        missingWithFaceAsset.push({ id: personId, ownerId: asset.ownerId, faceAssetId: face.id});
       }
     }
 
@@ -764,7 +1269,7 @@ export class MetadataService extends BaseService {
         `Found timezone ${timeZone} via ${exifTags.tzSource} for asset ${asset.id}: ${asset.originalPath}`,
       );
     } else {
-      this.logger.debug(`No timezone information found for asset ${asset.id}: ${asset.originalPath}`);
+      this.logger.verbose(`No timezone information found for asset ${asset.id}: ${asset.originalPath}`);
     }
 
     let dateTimeOriginal = dateTime?.toDate();
@@ -824,6 +1329,7 @@ export class MetadataService extends BaseService {
   }
 
   private async getVideoTags(originalPath: string) {
+
     const { videoStreams, format } = await this.mediaRepository.probe(originalPath);
 
     const tags: Pick<ImmichTags, 'Duration' | 'Orientation'> = {};
@@ -910,5 +1416,191 @@ export class MetadataService extends BaseService {
     await this.assetRepository.update({ id: asset.id, sidecarPath: null });
 
     return JobStatus.SUCCESS;
+  
+  }
+  // Function to read and parse a JSON file
+  private async readJsonFile<T = unknown>(path: string): Promise<T | null> {
+    try {
+      const data = await fs.readFile(path, 'utf-8');
+
+      if (!data.trim()) {
+        this.logger.warn(`Warning: JSON file at "${path}" is empty.`);
+        return null;
+      }
+
+      return JSON.parse(data) as T;
+    } catch (error) {
+      this.logger.error(
+        `Error reading JSON file at "${path}": ${error instanceof Error ? error.message : String(error)}`
+      );
+      return null;
+    }
+  }
+
+  private async getExifJsonTags(asset: Asset): Promise<ImmichTags | undefined> {
+    this.logger.verbose('getExifJsonTags');
+
+    if (!asset || !asset.originalPath) {
+      this.logger.warn('Asset or originalPath is missing.');
+      return {};
+    }
+
+    this.logger.verbose(`Asset ID: ${asset.id}`);
+    this.logger.verbose(`Original Path: ${asset.originalPath}`);
+
+    const jsonFile = `${asset.originalPath}.json`;
+    this.logger.verbose(`Reading EXIF JSON file: ${jsonFile}`);
+
+    const jsonData = await this.readJsonFile<JsonData>(jsonFile);
+
+    if (!jsonData) {
+      this.logger.warn(`No EXIF JSON data found for file: ${jsonFile}`);
+      return undefined;
+    }
+
+    // Uncomment if needed for deep inspection
+    //    this.logger.verbose('Parsed EXIF JSON data:', JSON.stringify(jsonData, null, 2));
+
+    return this.ExifFromJsonTag(jsonData);
+  }
+
+  private async GetUserId(hashId: string, asset: Asset): Promise<string> {
+    const fileDirectory = path.parse(asset.originalPath).dir;
+    const filePath = path.join(fileDirectory, 'PersonData.json');
+    this.logger.verbose('filePath', filePath);
+
+    try {
+      const rawData = await fs.readFile(filePath, 'utf8');
+      const parsed = JSON.parse(rawData);
+      const sidecarData = new Map<string, SidecarPerson[]>(Object.entries(parsed));
+
+      for (const [, people] of sidecarData) {
+        const person = people.find((p) => p.hashId === hashId);
+        if (person) {
+          return person.id;
+        }
+      }
+    } catch (error) {
+      this.logger.error(`Error reading or parsing ${filePath}`, error);
+    }
+
+    return '';
+  }
+
+  async getExtraData(id: string, people: PersonWithFacesResponseDto[]): Promise<{
+    mainPerson: SideCarPersonDto | undefined;
+    ownerPerson: SideCarPersonDto | undefined;
+    relatedProfiles: SideCarPersonDto[];
+    coauthors:  SideCarPersonDto[];
+    taggedPeople:  SideCarPersonDto[];
+    url: string;
+    locationName: string;
+    locationURL: string;
+    thumbnail: string;
+  } | undefined> {
+
+    const [asset] = await this.assetRepository.getByIds([id]);
+    if (!asset) return;
+
+    const jsonData = await this.getExifJsonTags(asset);
+
+    if (!jsonData) return;
+    this.logger.debug('getExtraData', jsonData);
+
+
+    const mainPerson: SideCarPersonDto = {
+      id: await this.GetUserId(String(jsonData.SocialMediaOwnerId ?? ''), asset),
+      name: String(jsonData.OwnerName ?? jsonData.OwnerID ?? ''),
+      username: String(jsonData.OwnerID ?? ''),
+      hashId: String(jsonData.SocialMediaOwnerId ?? ''),
+      url: "https://www.instagram.com/" + String(jsonData.OwnerID ?? ''),
+    };
+    // Process the second social media
+
+    const ownerPerson: SideCarPersonDto = {
+      id: await this.GetUserId(String(jsonData.UserId ?? ''), asset),
+      name: String(jsonData.UserFullName ?? jsonData.UserName ?? ''),
+      username: String(jsonData.UserName ?? ''),
+      hashId: String(jsonData.UserId ?? ''),
+      url: "https://www.instagram.com/" + String(jsonData.UserName ?? ''),
+    };
+
+    let relatedProfiles: SideCarPersonDto[] = await Promise.all(
+      (jsonData.RelatedProfiles ?? []).map(async profile => ({
+        id: await this.GetUserId(String(profile.id ?? ''), asset),
+        name: profile.full_name ?? profile.username ?? '',
+        username: profile.username,
+        hashId: profile.id,
+        url: "https://www.instagram.com/" + String(profile.username ?? ''),
+      }))
+    );
+
+
+
+    let coauthors: SideCarPersonDto[] = await Promise.all(
+      (jsonData.Coauthors ?? []).map(async profile => ({
+        id: await this.GetUserId(String(profile.id ?? ''), asset),
+        name: profile.FullName ?? profile.TaggedUserName ?? '',
+        username: profile.TaggedUserName,
+        hashId: String(profile.id || ''), // Ensure id is always a string
+        url: "https://www.instagram.com/" + String(profile.TaggedUserName ?? ''),
+      }))
+    );
+    let taggedPeople: SideCarPersonDto[] = await Promise.all(
+      (jsonData.TaggedPeople ?? []).map(async profile => ({
+        id: await this.GetUserId(String(profile.id ?? ''), asset),
+        name: profile.FullName,
+        username: profile.TaggedUserName,
+        hashId: String(profile.id || ''), // Ensure id is always a string
+        url: "https://www.instagram.com/" + String(profile.TaggedUserName ?? ''),
+      }))
+    );
+
+    // Check if the main person and owner person are the same
+    const url = String(jsonData.Post_url ?? '');
+    const locationName = String(jsonData.LocationName ?? '');
+    const locationURL = String(jsonData.LocationUrl ?? '');
+
+    let addMainPerson = true;
+    let addOwnerPerson = true;
+    if (people) {
+      //verify if mainPerson is in the people array
+      addMainPerson = !people.some((person) => person.id === mainPerson.id);
+      //verify if ownerPerson is in the people array
+      addOwnerPerson = !people.some((person) => person.id === ownerPerson.id);
+      //verify if taggedPeople is in the people array and remove from taggedPeople
+      taggedPeople = taggedPeople.filter((person) => !people.some((p) => p.id === person.id));
+      //verify if coauthors is in the people array and remove from coauthors
+      coauthors = coauthors.filter((person) => !people.some((p) => p.id === person.id));
+      //verify if relatedProfiles is in the people array and remove from relatedProfiles
+      relatedProfiles = relatedProfiles.filter((person) => !people.some((p) => p.id === person.id));
+
+
+    }
+    if (mainPerson.id === ownerPerson.id) {
+      addOwnerPerson = false;
+
+    }
+    return {
+      mainPerson: addMainPerson ? mainPerson : undefined,
+      ownerPerson: addOwnerPerson ? ownerPerson : undefined,
+      relatedProfiles,
+      coauthors,
+      taggedPeople,
+      url,
+      locationName,
+      locationURL
+    };
+  }
+
+  getCountries(auth: AuthDto, locale = 'en') {
+    countries.registerLocale(enLocale); // You can support more locales here
+    const countryList = countries.getNames(locale);
+
+    return Object.entries(countryList).map(([code, name]) => ({
+      code,
+      name,
+    }));
   }
 }
+

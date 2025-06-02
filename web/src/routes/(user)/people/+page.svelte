@@ -16,7 +16,10 @@
   } from '$lib/components/shared-components/notification/notification';
   import { ActionQueryParameterValue, AppRoute, QueryParameter, SessionStorageKey } from '$lib/constants';
   import { modalManager } from '$lib/managers/modal-manager.svelte';
+  import PersonDescriptionEditModal from '$lib/modals/PersonDescriptionEditModal.svelte';
+
   import PersonEditBirthDateModal from '$lib/modals/PersonEditBirthDateModal.svelte';
+  import EditPersonModal from '$lib/modals/PersonEditModal.svelte';
   import PersonMergeSuggestionModal from '$lib/modals/PersonMergeSuggestionModal.svelte';
   import { locale } from '$lib/stores/preferences.store';
   import { websocketEvents } from '$lib/stores/websocket';
@@ -50,7 +53,8 @@
   let searchedPeopleLocal: PersonResponseDto[] = $state([]);
   let innerHeight = $state(0);
   let searchPeopleElement = $state<ReturnType<typeof SearchPeople>>();
-
+    let suggestedPeople: PersonResponseDto[] = $state([]);
+    let isSearchingPeople = $state(false);
   onMount(() => {
     const getSearchedPeople = $page.url.searchParams.get(QueryParameter.SEARCHED_PEOPLE);
     if (getSearchedPeople) {
@@ -235,6 +239,31 @@
       return person;
     });
   };
+  const handleEditDescription = async (person: PersonResponseDto) => {
+    const updatedPerson = await modalManager.show(PersonDescriptionEditModal, { person });
+
+    if (!updatedPerson) {
+      return;
+    }
+    people = people.map((person: PersonResponseDto) => {
+      if (person.id === updatedPerson.id) {
+        return updatedPerson;
+      }
+      return person;
+    });
+  };
+  const handleEditPersonData = async (person: PersonResponseDto) => {
+    const updatedPerson = await modalManager.show(EditPersonModal, { person, suggestedPeople, isSearchingPeople });
+    if (!updatedPerson) {
+      return;
+    }
+    people = people.map((person: PersonResponseDto) => {
+      if (person.id === updatedPerson.id) {
+        return updatedPerson;
+      }
+      return person;
+    });
+  };
 
   const onResetSearchBar = async () => {
     await clearQueryParam(QueryParameter.SEARCHED_PEOPLE, $page.url);
@@ -299,6 +328,7 @@
   };
 
   const findPeopleWithSimilarName = async (name: string, personId: string) => {
+    console.log('findPeopleWithSimilarName', name, personId);
     const searchResult = await searchPerson({ name, withHidden: true });
     return searchResult.find(
       (person) => person.name.toLowerCase() === name.toLowerCase() && person.id !== personId && person.name,
@@ -368,6 +398,8 @@
             onMergePeople={() => handleMergePeople(person)}
             onHidePerson={() => handleHidePerson(person)}
             onToggleFavorite={() => handleToggleFavorite(person)}
+            onEditDescription={() => handleEditDescription(person)}
+            onEditPersondata={() => handleEditPersonData(person)}
           />
 
           <input

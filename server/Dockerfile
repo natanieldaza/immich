@@ -1,15 +1,47 @@
-# dev build
+# # dev build
+# FROM ghcr.io/immich-app/base-server-dev:202503251114@sha256:10e8973e8603c5729436d0f8ca32e7794375d9d1e428d65725eb03979b60c891 AS dev
+
+# RUN apt-get install --no-install-recommends -yqq tini
+# WORKDIR /usr/src/app
+
+# # Ensure package-lock.json is present and copied correctly
+# COPY server/package.json server/package-lock.json ./
+# RUN npm install -g npm@7 && \
+#   npm ci --legacy-peer-deps --no-audit --no-fund && \
+#   # exiftool-vendored.pl, sharp-linux-x64 and sharp-linux-arm64 are the only ones we need
+#   # they're marked as optional dependencies, so we need to copy them manually after pruning
+#   rm -rf node_modules/@img/sharp-libvips* && \
+#   rm -rf node_modules/@img/sharp-linuxmusl-x64
+
+# ENV PATH="${PATH}:/usr/src/app/bin" \
+#   IMMICH_ENV=development \
+#   NVIDIA_DRIVER_CAPABILITIES=all \
+#   NVIDIA_VISIBLE_DEVICES=all
+
+# ENTRYPOINT ["tini", "--", "/bin/sh"]
+
+# dev build using the base Immich image
 FROM ghcr.io/immich-app/base-server-dev:202505131114@sha256:cf4507bbbf307e9b6d8ee9418993321f2b85867da8ce14d0a20ccaf9574cb995 AS dev
 
-RUN apt-get install --no-install-recommends -yqq tini
+RUN apt-get update && apt-get install --no-install-recommends -yqq tini
+
+# Install Node.js v20.18.3 and npm v11.3.0
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    npm install -g npm@11.3.0
+
+
+# Ensure working directory is set
+
 WORKDIR /usr/src/app
 COPY server/package.json server/package-lock.json ./
 COPY server/patches ./patches
-RUN npm ci && \
-    # exiftool-vendored.pl, sharp-linux-x64 and sharp-linux-arm64 are the only ones we need
-    # they're marked as optional dependencies, so we need to copy them manually after pruning
+RUN npm ci --legacy-peer-deps --no-audit --no-fund && \
+    # Clean up sharp-related files
     rm -rf node_modules/@img/sharp-libvips* && \
     rm -rf node_modules/@img/sharp-linuxmusl-x64
+
+# Set environment variables
 ENV PATH="${PATH}:/usr/src/app/bin" \
     IMMICH_ENV=development \
     NVIDIA_DRIVER_CAPABILITIES=all \
@@ -57,7 +89,8 @@ COPY server/resources resources
 COPY server/package.json server/package-lock.json ./
 COPY server/start*.sh ./
 COPY "docker/scripts/get-cpus.sh" ./
-RUN npm install -g @immich/cli && npm cache clean --force
+RUN npm link && npm install -g @immich/cli && npm cache clean --force
+
 COPY LICENSE /licenses/LICENSE.txt
 COPY LICENSE /LICENSE
 ENV PATH="${PATH}:/usr/src/app/bin"

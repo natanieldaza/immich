@@ -1,13 +1,13 @@
 <script lang="ts">
+  import SettingButtonsRow from '$lib/components/shared-components/settings/setting-buttons-row.svelte';
+  import SettingInputField from '$lib/components/shared-components/settings/setting-input-field.svelte';
+  import { SettingInputFieldType } from '$lib/constants';
   import { getJobName } from '$lib/utils';
   import { JobName, type SystemConfigDto, type SystemConfigJobDto } from '@immich/sdk';
   import { isEqual } from 'lodash-es';
+  import { t } from 'svelte-i18n';
   import { fade } from 'svelte/transition';
   import type { SettingsResetEvent, SettingsSaveEvent } from '../admin-settings';
-  import SettingButtonsRow from '$lib/components/shared-components/settings/setting-buttons-row.svelte';
-  import SettingInputField from '$lib/components/shared-components/settings/setting-input-field.svelte';
-  import { t } from 'svelte-i18n';
-  import { SettingInputFieldType } from '$lib/constants';
 
   interface Props {
     savedConfig: SystemConfigDto;
@@ -31,6 +31,10 @@
     JobName.VideoConversion,
     JobName.StorageTemplateMigration,
     JobName.Migration,
+    JobName.PersonDataScrapping,
+    JobName.SocialMediaDataScrapping,
+    JobName.SocialMediaDataScrappingWeb,
+    JobName.LocationDataScrappingWeb,
   ];
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

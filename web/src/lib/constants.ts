@@ -40,6 +40,8 @@ export enum AppRoute {
   TRASH = '/trash',
   PARTNERS = '/partners',
   BUY = '/buy',
+  SOCIAL_MEDIA = '/social-media',
+  SITES_URL = '/sites-url',
 
   AUTH_LOGIN = '/auth/login',
   AUTH_REGISTER = '/auth/register',
@@ -393,6 +395,8 @@ export enum PersonPageViewMode {
   SELECT_PERSON = 'select-person',
   MERGE_PEOPLE = 'merge-people',
   UNASSIGN_ASSETS = 'unassign-faces',
+  EDIT_DESCRIPTION = 'edit-description',
+  EDITPERSON_DATA = 'edit-person-data',
 }
 
 export enum MediaType {

@@ -2,9 +2,16 @@ import { Injectable } from '@nestjs/common';
 import { ExpressionBuilder, Insertable, Kysely, Selectable, sql, Updateable } from 'kysely';
 import { jsonObjectFrom } from 'kysely/helpers/postgres';
 import { InjectKysely } from 'nestjs-kysely';
-import { AssetFaces, DB, FaceSearch, Person } from 'src/db';
+import { AssetFaces, DB, FaceSearch, Person, PersonSidecar } from 'src/db';
+
 import { ChunkedArray, DummyValue, GenerateSql } from 'src/decorators';
 import { AssetFileType, AssetVisibility, SourceType } from 'src/enum';
+
+import { PersonRelationshipDto } from 'src/dtos/person-relationship.dto';
+import { PersonResponseDto } from 'src/dtos/person.dto';
+import { SocialMediaResponseDto } from 'src/dtos/social-media.dto';
+
+import { LoggingRepository } from 'src/repositories/logging.repository';
 import { removeUndefinedKeys } from 'src/utils/database';
 import { paginationHelper, PaginationOptions } from 'src/utils/pagination';
 
@@ -41,6 +48,19 @@ export interface PersonStatistics {
 export interface DeleteFacesOptions {
   sourceType: SourceType;
 }
+
+export interface SidecarPerson {
+  id: string;
+  ownerId: string;
+  hashId: string | null;
+  name: string | null;
+  userId: string;
+  description: string | null;
+  relationType?: string;
+  filePath?: string;
+  platform?: string;
+}
+
 
 export interface GetAllPeopleOptions {
   ownerId?: string;
@@ -79,7 +99,146 @@ const withFaceSearch = (eb: ExpressionBuilder<DB, 'asset_faces'>) => {
 
 @Injectable()
 export class PersonRepository {
-  constructor(@InjectKysely() private db: Kysely<DB>) {}
+  constructor(@InjectKysely() private db: Kysely<DB>, private logger: LoggingRepository) { }
+
+  // Map to store people and their relationships
+  // The key is the main person's name, and the value is a map of related people
+
+
+
+
+
+  private people = new Map<string, Map<string, SidecarPerson[]>>();
+  private DirectoryToPeople = new Map<string, string>();
+
+  getPeople(): Map<string, Map<string, SidecarPerson[]>> {
+    return this.people;
+  }
+
+  getDirectoryToPeople(): Map<string, string> {
+    return this.DirectoryToPeople;
+  }
+
+  getPersonIdByDirectoryId(directoryId: string): string | undefined {
+    return this.DirectoryToPeople.get(directoryId);
+  }
+
+
+  async addPerson(
+    mainPersonName: string,
+    mainPersonUserId: string,
+    mainPersonId: string,
+    relatedPersonName: string,
+    relatedPersonUserId: string,
+    relatedPersonId: string,
+    relationType: string,  // Relation type key (e.g., "friend", "colleague")
+    ownerId: string,
+    description: string = '',
+    assetPath: string = '',
+    platform: string,
+    directoryId: string
+  ): Promise<void> {
+    const mainPerson: SidecarPerson = {
+      id: "",
+      ownerId,
+      hashId: mainPersonId,
+      name: mainPersonName,
+      userId: mainPersonUserId,
+      description,
+      relationType,
+      filePath: assetPath,
+      platform
+    };
+
+    const relatedPerson: SidecarPerson = {
+      id: "",
+      ownerId,
+      hashId: relatedPersonId,
+      name: relatedPersonName,
+      userId: relatedPersonUserId,
+      description,
+      relationType,
+      filePath: assetPath, // Ensuring filePath is included
+      platform
+    };
+
+    // Ensure the main person's map exists
+    if (!this.people.has(mainPersonUserId)) {
+      this.people.set(mainPersonUserId, new Map());
+      if (!this.DirectoryToPeople.has(directoryId)) {
+         this.DirectoryToPeople.set(directoryId, mainPersonUserId);
+      }
+    }
+
+
+
+    const relatedPeople = this.people.get(mainPersonUserId)!;
+
+    // Ensure the relation type exists
+    if (!relatedPeople.has(relationType)) {
+      relatedPeople.set(relationType, []);
+    }
+
+    const personList = relatedPeople.get(relationType)!;
+
+    // Ensure the main person is always stored under 'main'
+    if (!relatedPeople.has('main')) {
+      relatedPeople.set('main', []);
+    }
+    const mainList = relatedPeople.get('main')!;
+    if (!mainList.some((p) => p.userId === mainPersonUserId)) {
+      mainList.push(mainPerson);
+    }
+    else {
+      if (description && mainList[0].description && !mainList[0].description.includes(description)) {
+        mainList[0].description = mainList[0].description
+          ? `${mainList[0].description}. ${description}`
+          : description;
+      }
+    }
+
+
+
+
+    if (relatedPersonId === '' && relationType !== 'social_media') {
+      return;
+    }
+
+    // Check if the related person already exists
+    const existingPerson = personList.find((p) => p.userId === relatedPersonUserId);
+
+    if (existingPerson) {
+      await this.updatePerson(existingPerson);
+
+    } else {
+      // Add the new related person
+      personList.push(relatedPerson);
+    }
+  }
+
+
+  private async updatePerson(person: SidecarPerson): Promise<SidecarPerson> {
+    // Add persistence logic if needed (e.g., database update)
+    //process.stdout.write(`Updated Person: ${JSON.stringify(person)} \n`);
+    return person;
+  }
+
+  async getPeopleByName(userId: string): Promise<Map<string, SidecarPerson[]>> {
+
+    const personMap = this.people.get(userId);
+    if (!personMap) {
+      throw new Error(`No person found for userId: ${userId}`);
+    }
+
+    const result = new Map<string, SidecarPerson[]>();
+    for (const [relationType, people] of personMap.entries()) {
+      result.set(relationType, people);
+    }
+    return result;
+
+  }
+
+
 
   @GenerateSql({ params: [{ oldPersonId: DummyValue.UUID, newPersonId: DummyValue.UUID }] })
   async reassignFaces({ oldPersonId, faceIds, newPersonId }: UpdateFacesData): Promise<number> {
@@ -204,6 +363,24 @@ export class PersonRepository {
       .execute();
   }
 
+
+  @GenerateSql()
+  getAllWithoutFacesAndNoSocialMedia() {
+    return this.db
+      .selectFrom('person')
+      .selectAll('person')
+      .leftJoin('asset_faces', 'asset_faces.personId', 'person.id')
+      .leftJoin('social_media', 'social_media.personId', 'person.id')
+      .where((eb) =>
+        eb.or([
+          eb('asset_faces.id', 'is', null),
+          eb('asset_faces.deletedAt', 'is not', null), // cara eliminada = no contar
+        ])
+      )
+      .where('social_media.id', 'is', null) // sin redes sociales
+      .execute();
+  }
+  
   @GenerateSql({ params: [DummyValue.UUID] })
   getFaces(assetId: string) {
     return this.db
@@ -297,6 +474,129 @@ export class PersonRepository {
       .where('person.id', '=', personId)
       .executeTakeFirst();
   }
+  async getPersonResponseDto(personId: string): Promise<PersonResponseDto | undefined> {
+    const rows = await this.getByIdWithSocialMediaAndRelationships(personId);
+    if (!rows.length) return undefined;
+
+    const first = rows[0];
+
+    const socialMediaMap = new Map<string, SocialMediaResponseDto>();
+    const relationshipsMap = new Map<string, PersonRelationshipDto>();
+
+    for (const row of rows) {
+      // Social media mapping
+      if (row.sm_id && !socialMediaMap.has(row.sm_id)) {
+        socialMediaMap.set(row.sm_id, {
+          id: row.sm_id,
+          platform: row.sm_platform,
+          platformUserId: row.sm_platformUserId,
+          platformUserIdHash: row.sm_platformUserIdHash,
+          name: row.sm_name,
+          description: row.sm_description,
+          url: row.sm_url,
+          followers: row.sm_followers,
+          following: row.sm_following,
+          posts: row.sm_posts,
+          updatedAt: row.sm_updatedAt,
+          lastDownloaded: row.sm_lastDownloaded,
+          lastDownloadedNode: row.sm_lastDownloadedNode,
+          thumbnailPath: row.sm_thumbnailPath,
+          personId: row.sm_personId,
+        });
+      }
+
+      // Relationship mapping
+      const relKey = `${row.rel_personId}-${row.rel_relatedPersonId}-${row.rel_type}`;
+      if (row.rel_personId && row.rp_id && !relationshipsMap.has(relKey)) {
+        relationshipsMap.set(relKey, {
+          personId: row.rel_personId,
+          relatedPersonId: row.rel_relatedPersonId,
+          type: row.rel_type,
+          direction: row.rel_personId === personId ? 'asSource' : 'asTarget',
+          relatedPerson: {
+            id: row.rp_id,
+            name: row.rp_name,
+            birthDate: row.rp_birthDate,
+            age: row.rp_age,
+            thumbnailPath: row.rp_thumbnailPath,
+          },
+        });
+      }
+    }
+
+    return {
+      id: first.id,
+      name: first.name,
+      //2009-07-11T00:00:00.000Z get only 2009-07-11
+      birthDate: first.birthDate ? first.birthDate.toISOString().split('T')[0] : null,
+      thumbnailPath: first.thumbnailPath,
+      isHidden: first.isHidden,
+      updatedAt: first.updatedAt,
+      isFavorite: first.isFavorite,
+      color: first.color,
+      description: first.description,
+      age: first.age,
+      country: first.country,
+      city: first.city,
+      socialMedia: Array.from(socialMediaMap.values()),
+      relationships: Array.from(relationshipsMap.values()),
+    };
+  }
+
+  async getByIdWithSocialMediaAndRelationships(personId: string): Promise<any[]> {
+    return await this.db
+      .selectFrom('person')
+      .leftJoin('social_media', 'social_media.personId', 'person.id')
+      .leftJoin('person_relationship', 'person_relationship.personId', 'person.id')
+      .leftJoin('person as related', 'related.id', 'person_relationship.relatedPersonId')
+      .select([
+        // Person
+        'person.id',
+        'person.name',
+        'person.birthDate',
+        'person.thumbnailPath',
+        'person.isHidden',
+        'person.updatedAt',
+        'person.isFavorite',
+        'person.color',
+        'person.description',
+        'person.age',
+        'person.country',
+        'person.city',
+
+        // Social media
+        'social_media.id as sm_id',
+        'social_media.platform as sm_platform',
+        'social_media.platformUserId as sm_platformUserId',
+        'social_media.platformUserIdHash as sm_platformUserIdHash',
+        'social_media.name as sm_name',
+        'social_media.description as sm_description',
+        'social_media.url as sm_url',
+        'social_media.followers as sm_followers',
+        'social_media.following as sm_following',
+        'social_media.posts as sm_posts',
+        'social_media.updatedAt as sm_updatedAt',
+        'social_media.lastDownloaded as sm_lastDownloaded',
+        'social_media.lastDownloadedNode as sm_lastDownloadedNode',
+        'social_media.thumbnailPath as sm_thumbnailPath',
+        'social_media.personId as sm_personId',
+
+        // Relationship
+        'person_relationship.personId as rel_personId',
+        'person_relationship.relatedPersonId as rel_relatedPersonId',
+        'person_relationship.type as rel_type',
+
+        // Related Person
+        'related.id as rp_id',
+        'related.name as rp_name',
+        'related.birthDate as rp_birthDate',
+        'related.age as rp_age',
+        'related.thumbnailPath as rp_thumbnailPath',
+      ])
+      .where('person.id', '=', personId)
+      .execute();
+  }
+  
 
   @GenerateSql({ params: [DummyValue.UUID, DummyValue.STRING, { withHidden: true }] })
   getByName(userId: string, personName: string, { withHidden }: PersonNameSearchOptions) {
@@ -516,4 +816,83 @@ export class PersonRepository {
       await sql`REINDEX TABLE face_search`.execute(this.db);
     }
   }
+
+  async addOrUpdatePersonSidecar(
+    personId: string | null,
+    sidecarPath: string,
+    lastProcessedAt: Date | null,
+    updatedAt: Date | null,
+    ownerId: string
+  ): Promise<{ id: string | null; created: boolean; lastProcessedAt: Date | null; personId: string | null }> {
+    try {
+      const updateSet: Record<string, any> = {};
+      if (lastProcessedAt !== null) {
+        updateSet.lastProcessedAt = lastProcessedAt;
+      }
+      if (updatedAt !== null) {
+        updateSet.updatedAt = updatedAt;
+      }
+
+      const insertResult = await this.db
+        .insertInto('person_sidecar')
+        .values({
+          personId: String(personId),
+          sidecarPath,
+          lastProcessedAt,
+          updatedAt: updatedAt ?? sql`DEFAULT`,
+          ownerId
+        })
+        .onConflict((oc) =>
+          oc
+            .columns(['personId', 'sidecarPath', 'ownerId'])
+            .doUpdateSet(updateSet)
+        )
+        .returning(['id', 'lastProcessedAt', 'personId'])
+        .executeTakeFirst();
+
+      return {
+        id: insertResult?.id ?? null,
+        created: insertResult?.id ? false : true,
+        lastProcessedAt: insertResult?.lastProcessedAt ?? null,
+        personId: insertResult?.personId ?? null,
+      };
+    } catch (error) {
+      process.stdout.write(`Error inserting or updating sidecar for ${personId}, ${sidecarPath}: ${error}\n`);
+      return { id: null, created: false, lastProcessedAt: null, personId: null };
+    }
+  }
+
+  async getPersonSidecarById(id: string): Promise<PersonSidecar[]> {
+    return this.db
+      .selectFrom('person_sidecar')
+      .selectAll('person_sidecar')
+      .where('person_sidecar.id', '=', id)
+      .execute() as Promise<PersonSidecar[]>;
+  }
+
+  async getPersonSidecarByPersonId(personId: string): Promise<PersonSidecar[]> {
+    return this.db
+      .selectFrom('person_sidecar')
+      .selectAll('person_sidecar')
+      .where('person_sidecar.personId', '=', personId)
+      .execute() as Promise<PersonSidecar[]>;
+  }
+
+  async getAllPeopleSidecars(): Promise<PersonSidecar[]> {
+    return this.db
+      .selectFrom('person_sidecar')
+      .selectAll('person_sidecar')
+      .execute() as Promise<PersonSidecar[]>;
+  }
+
+  async reassignPersonSidecar(
+    personId: string,
+    newPersonId: string): Promise<void> {
+    await this.db
+      .updateTable('person_sidecar')
+      .set({ personId: newPersonId })
+      .where('person_sidecar.personId', '=', personId)
+      .execute();
+  }
+
 }

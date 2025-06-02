@@ -12,7 +12,8 @@
   import CreateSharedLink from '$lib/components/photos-page/actions/create-shared-link.svelte';
   import DeleteAssets from '$lib/components/photos-page/actions/delete-assets.svelte';
   import DownloadAction from '$lib/components/photos-page/actions/download-action.svelte';
-  import FavoriteAction from '$lib/components/photos-page/actions/favorite-action.svelte';
+  import FavoriteAction from '$lib/components/photos-page/actions/favorite-action.svelte'; 
+  import MoveAssets from '$lib/components/photos-page/actions/move-assets.svelte';
   import TagAction from '$lib/components/photos-page/actions/tag-action.svelte';
   import AssetSelectControlBar from '$lib/components/photos-page/asset-select-control-bar.svelte';
   import ButtonContextMenu from '$lib/components/shared-components/context-menu/button-context-menu.svelte';
@@ -171,6 +172,7 @@
           <TagAction menuItem />
         {/if}
         <DeleteAssets menuItem onAssetDelete={triggerAssetUpdate} />
+        <MoveAssets menuItem onAssetMove={triggerAssetUpdate} {tree} />
         <hr />
         <AssetJobActions />
       </ButtonContextMenu>

@@ -153,6 +153,7 @@ export function toJson<DB, TB extends keyof DB & string, T extends TB | Expressi
 }
 
 export const ASSET_CHECKSUM_CONSTRAINT = 'UQ_assets_owner_checksum';
+export const DIRECTORY_LIBRARY_PATH_CONSTRAINT = 'UQ_directories_library_path';
 
 export function withDefaultVisibility<O>(qb: SelectQueryBuilder<DB, 'assets', O>) {
   return qb.where('assets.visibility', 'in', [sql.lit(AssetVisibility.ARCHIVE), sql.lit(AssetVisibility.TIMELINE)]);

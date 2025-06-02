@@ -10,9 +10,11 @@ import { ConfigRepository } from 'src/repositories/config.repository';
 import { CronRepository } from 'src/repositories/cron.repository';
 import { CryptoRepository } from 'src/repositories/crypto.repository';
 import { DatabaseRepository } from 'src/repositories/database.repository';
+import { DirectoryRepository } from 'src/repositories/directory.repository';
 import { DownloadRepository } from 'src/repositories/download.repository';
 import { EmailRepository } from 'src/repositories/email.repository';
 import { EventRepository } from 'src/repositories/event.repository';
+import { GeodataPlacesRepository } from 'src/repositories/geodata-places.repository';
 import { JobRepository } from 'src/repositories/job.repository';
 import { LibraryRepository } from 'src/repositories/library.repository';
 import { LoggingRepository } from 'src/repositories/logging.repository';
@@ -25,12 +27,15 @@ import { MoveRepository } from 'src/repositories/move.repository';
 import { NotificationRepository } from 'src/repositories/notification.repository';
 import { OAuthRepository } from 'src/repositories/oauth.repository';
 import { PartnerRepository } from 'src/repositories/partner.repository';
+import { PersonRelationshipRepository } from 'src/repositories/person-relationship.repository';
 import { PersonRepository } from 'src/repositories/person.repository';
 import { ProcessRepository } from 'src/repositories/process.repository';
 import { SearchRepository } from 'src/repositories/search.repository';
 import { ServerInfoRepository } from 'src/repositories/server-info.repository';
 import { SessionRepository } from 'src/repositories/session.repository';
 import { SharedLinkRepository } from 'src/repositories/shared-link.repository';
+import { SitesUrlRepository } from 'src/repositories/sites-url.repository';
+import { SocialMediaRepository } from 'src/repositories/social-media.repository';
 import { StackRepository } from 'src/repositories/stack.repository';
 import { StorageRepository } from 'src/repositories/storage.repository';
 import { SyncRepository } from 'src/repositories/sync.repository';
@@ -41,6 +46,7 @@ import { TrashRepository } from 'src/repositories/trash.repository';
 import { UserRepository } from 'src/repositories/user.repository';
 import { VersionHistoryRepository } from 'src/repositories/version-history.repository';
 import { ViewRepository } from 'src/repositories/view-repository';
+import { WebDataScrappingRepository } from 'src/repositories/webdata-scrapping.repository';
 
 export const repositories = [
   AccessRepository,
@@ -55,12 +61,14 @@ export const repositories = [
   CronRepository,
   CryptoRepository,
   DatabaseRepository,
+  DirectoryRepository,
   DownloadRepository,
   EmailRepository,
   EventRepository,
   JobRepository,
   LibraryRepository,
   LoggingRepository,
+  GeodataPlacesRepository,
   MachineLearningRepository,
   MapRepository,
   MediaRepository,
@@ -71,11 +79,14 @@ export const repositories = [
   OAuthRepository,
   PartnerRepository,
   PersonRepository,
+  PersonRelationshipRepository,
   ProcessRepository,
   SearchRepository,
   SessionRepository,
   ServerInfoRepository,
   SharedLinkRepository,
+  SitesUrlRepository,
+  SocialMediaRepository,
   StackRepository,
   StorageRepository,
   SyncRepository,
@@ -86,4 +97,5 @@ export const repositories = [
   UserRepository,
   ViewRepository,
   VersionHistoryRepository,
+  WebDataScrappingRepository,
 ];

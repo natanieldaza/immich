@@ -25,7 +25,9 @@ import { SearchService } from 'src/services/search.service';
 import { ServerService } from 'src/services/server.service';
 import { SessionService } from 'src/services/session.service';
 import { SharedLinkService } from 'src/services/shared-link.service';
+import { SitesUrlService } from 'src/services/sites-url.service';
 import { SmartInfoService } from 'src/services/smart-info.service';
+import { SocialMediaService } from 'src/services/social-media.service';
 import { StackService } from 'src/services/stack.service';
 import { StorageTemplateService } from 'src/services/storage-template.service';
 import { StorageService } from 'src/services/storage.service';
@@ -39,6 +41,7 @@ import { UserAdminService } from 'src/services/user-admin.service';
 import { UserService } from 'src/services/user.service';
 import { VersionService } from 'src/services/version.service';
 import { ViewService } from 'src/services/view.service';
+import { WebDataScrappingService } from 'src/services/webdata-scrapping.service';
 
 export const services = [
   ApiKeyService,
@@ -71,7 +74,9 @@ export const services = [
   SmartInfoService,
   StackService,
   StorageService,
+  SitesUrlService,
   StorageTemplateService,
+  SocialMediaService,
   SyncService,
   SystemConfigService,
   SystemMetadataService,
@@ -82,4 +87,5 @@ export const services = [
   UserService,
   VersionService,
   ViewService,
+  WebDataScrappingService,
 ];
