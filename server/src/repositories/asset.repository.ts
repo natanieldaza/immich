@@ -331,6 +331,28 @@ export class AssetRepository {
       .limit(1)
       .executeTakeFirst();
   }
+  @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID] })
+  getbyLibraryIdAndDirectoryId(libraryId: string, directoryId: string){
+    return this.db
+      .selectFrom('assets')
+      .selectAll('assets')
+      .where('libraryId', '=', asUuid(libraryId))
+      .where('directoryId', '=', asUuid(directoryId))
+      .execute();
+  }
+
+  // async getAll(
+  //   pagination: PaginationOptions,
+  //   { orderDirection, ...options }: AssetSearchOptions = {},
+  // ): Paginated<AssetEntity> {
+  //   const builder = searchAssetBuilder(this.db, options)
+  //     .select(withFiles)
+  //     .orderBy('assets.createdAt', orderDirection ?? 'asc')
+  //     .limit(pagination.take + 1)
+  //     .offset(pagination.skip ?? 0);
+  //   const items = await builder.execute();
+  //   return paginationHelper(items as any as AssetEntity[], pagination.take);
+  // }
 
   /**
    * Get assets by device's Id on the database
@@ -413,6 +435,34 @@ export class AssetRepository {
     }
     await this.db.updateTable('assets').set(options).where('id', '=', anyUuid(ids)).execute();
   }
+  private escapeForRegexp(str: string): string {
+    // Escape characters that are special in regex: \ ^ $ * + ? . ( ) | { } [ ]
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+  async updatePaths(id: string, newFolderPath: string): Promise<void> {
+    if (!id) return;
+
+    // Ensure that the newFolderPath is a valid string
+    if (!newFolderPath) return;
+
+    await this.db
+      .updateTable('assets')
+      .set({
+        originalPath: sql`
+          concat(${sql`${newFolderPath}::text`}, '/', substring("assets"."originalPath" from '.*/([^/]+)$'))
+        `,
+        sidecarPath: sql`
+          CASE 
+            WHEN "assets"."sidecarPath" IS NOT NULL 
+            THEN concat(${sql`${newFolderPath}::text`}, '/', substring("assets"."sidecarPath" from '.*/([^/]+)$')) 
+            ELSE NULL 
+          END
+        `,
+      })
+      .where('id', '=', asUuid(id))  // Using asUuid to properly cast the id
+      .execute();
+  }
+
 
   async updateByLibraryId(libraryId: string, options: Updateable<Assets>): Promise<void> {
     await this.db.updateTable('assets').set(options).where('libraryId', '=', asUuid(libraryId)).execute();
@@ -919,6 +969,41 @@ export class AssetRepository {
       .executeTakeFirstOrThrow();
   }
 
+  @GenerateSql({
+    params: [{
+      libraryId: DummyValue.UUID, directoryId: DummyValue.UUID,
+      importPaths: [DummyValue.STRING], exclusionPatterns: [DummyValue.STRING]
+    }],
+  })
+  async detectOfflineExternalAssetsByDirectory(
+    libraryId: string,
+    directoryId: string,
+    importPaths: string[],
+    exclusionPatterns: string[],
+  ): Promise<UpdateResult> {
+    const paths = importPaths.map((importPath) => `${importPath}%`);
+    const exclusions = exclusionPatterns.map((pattern) => globToSqlPattern(pattern));
+
+    return this.db
+      .updateTable('assets')
+      .set({
+        isOffline: true,
+        deletedAt: new Date(),
+      })
+      .where('isOffline', '=', false)
+      .where('isExternal', '=', true)
+      .where('libraryId', '=', asUuid(libraryId))
+      .where('directoryId', '=', asUuid(directoryId))
+      .where((eb) =>
+        eb.or([
+          eb.not(eb.or(paths.map((path) => eb('originalPath', 'like', path)))),
+          eb.or(exclusions.map((path) => eb('originalPath', 'like', path))),
+        ]),
+      )
+      .executeTakeFirstOrThrow();
+  }
+
+  
   @GenerateSql({ params: [DummyValue.UUID, [DummyValue.STRING]] })
   async filterNewExternalAssetPaths(libraryId: string, paths: string[]): Promise<string[]> {
     const result = await this.db
@@ -941,6 +1026,35 @@ export class AssetRepository {
     return result.map((row) => row.path as string);
   }
 
+
+  @GenerateSql({
+    params: [{ directoryId: DummyValue.UUID, paths: [DummyValue.STRING] }],
+  })
+  async filterNewExternalAssetPathsByDirectory(
+    directoryId: string,
+    paths: string[],
+  ): Promise<string[]> {
+    const result = await this.db
+      .selectFrom(unnest(paths).as('path'))
+      .select('path')
+      .where((eb) =>
+        eb.not(
+          eb.exists(
+            this.db
+              .selectFrom('assets')
+              .select('originalPath')
+              .whereRef('assets.originalPath', '=', eb.ref('path'))
+              .where('directoryId', '=', asUuid(directoryId))
+              .where('isExternal', '=', true),
+          ),
+        ),
+      )
+      .execute();
+
+    return result.map((row) => row.path as string);
+  }
+
+
   async getLibraryAssetCount(libraryId: string): Promise<number> {
     const { count } = await this.db
       .selectFrom('assets')
@@ -950,4 +1064,16 @@ export class AssetRepository {
 
     return count;
   }
+
+  async getDirectoryAssetCount(libraryId: string, directoryId: string): Promise<number> {
+    const { count } = await this.db
+      .selectFrom('assets')
+      .select((eb) => eb.fn.countAll().as('count'))
+      .where('libraryId', '=', asUuid(libraryId))
+      .where('directoryId', '=', asUuid(directoryId))
+      .executeTakeFirstOrThrow();
+
+    return Number(count);
+  }
+
 }

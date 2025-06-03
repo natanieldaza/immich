@@ -13,17 +13,24 @@ part of openapi.api;
 class PersonCreateDto {
   /// Returns a new [PersonCreateDto] instance.
   PersonCreateDto({
+    this.age,
     this.birthDate,
     this.color,
+    this.description,
     this.isFavorite,
     this.isHidden,
     this.name,
   });
 
+  int? age;
+
   /// Person date of birth. Note: the mobile app cannot currently set the birth date to null.
   DateTime? birthDate;
 
   String? color;
+
+  /// Person description
+  String? description;
 
   ///
   /// Please note: This property should have been non-nullable! Since the specification file
@@ -53,8 +60,10 @@ class PersonCreateDto {
 
   @override
   bool operator ==(Object other) => identical(this, other) || other is PersonCreateDto &&
+    other.age == age &&
     other.birthDate == birthDate &&
     other.color == color &&
+    other.description == description &&
     other.isFavorite == isFavorite &&
     other.isHidden == isHidden &&
     other.name == name;
@@ -62,17 +71,24 @@ class PersonCreateDto {
   @override
   int get hashCode =>
     // ignore: unnecessary_parenthesis
+    (age == null ? 0 : age!.hashCode) +
     (birthDate == null ? 0 : birthDate!.hashCode) +
     (color == null ? 0 : color!.hashCode) +
+    (description == null ? 0 : description!.hashCode) +
     (isFavorite == null ? 0 : isFavorite!.hashCode) +
     (isHidden == null ? 0 : isHidden!.hashCode) +
     (name == null ? 0 : name!.hashCode);
 
   @override
-  String toString() => 'PersonCreateDto[birthDate=$birthDate, color=$color, isFavorite=$isFavorite, isHidden=$isHidden, name=$name]';
+  String toString() => 'PersonCreateDto[age=$age, birthDate=$birthDate, color=$color, description=$description, isFavorite=$isFavorite, isHidden=$isHidden, name=$name]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
+    if (this.age != null) {
+      json[r'age'] = this.age;
+    } else {
+    //  json[r'age'] = null;
+    }
     if (this.birthDate != null) {
       json[r'birthDate'] = _dateFormatter.format(this.birthDate!.toUtc());
     } else {
@@ -82,6 +98,11 @@ class PersonCreateDto {
       json[r'color'] = this.color;
     } else {
     //  json[r'color'] = null;
+    }
+    if (this.description != null) {
+      json[r'description'] = this.description;
+    } else {
+    //  json[r'description'] = null;
     }
     if (this.isFavorite != null) {
       json[r'isFavorite'] = this.isFavorite;
@@ -110,8 +131,10 @@ class PersonCreateDto {
       final json = value.cast<String, dynamic>();
 
       return PersonCreateDto(
+        age: mapValueOfType<int>(json, r'age'),
         birthDate: mapDateTime(json, r'birthDate', r''),
         color: mapValueOfType<String>(json, r'color'),
+        description: mapValueOfType<String>(json, r'description'),
         isFavorite: mapValueOfType<bool>(json, r'isFavorite'),
         isHidden: mapValueOfType<bool>(json, r'isHidden'),
         name: mapValueOfType<String>(json, r'name'),

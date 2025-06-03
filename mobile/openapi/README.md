@@ -101,6 +101,7 @@ Class | Method | HTTP request | Description
 *AssetsApi* | [**getAssetInfo**](doc//AssetsApi.md#getassetinfo) | **GET** /assets/{id} | 
 *AssetsApi* | [**getAssetStatistics**](doc//AssetsApi.md#getassetstatistics) | **GET** /assets/statistics | 
 *AssetsApi* | [**getRandom**](doc//AssetsApi.md#getrandom) | **GET** /assets/random | 
+*AssetsApi* | [**moveAssets**](doc//AssetsApi.md#moveassets) | **PUT** /assets/move | 
 *AssetsApi* | [**playAssetVideo**](doc//AssetsApi.md#playassetvideo) | **GET** /assets/{id}/video/playback | 
 *AssetsApi* | [**replaceAsset**](doc//AssetsApi.md#replaceasset) | **PUT** /assets/{id}/original | replaceAsset
 *AssetsApi* | [**runAssetJobs**](doc//AssetsApi.md#runassetjobs) | **POST** /assets/jobs | 
@@ -210,6 +211,17 @@ Class | Method | HTTP request | Description
 *SharedLinksApi* | [**removeSharedLink**](doc//SharedLinksApi.md#removesharedlink) | **DELETE** /shared-links/{id} | 
 *SharedLinksApi* | [**removeSharedLinkAssets**](doc//SharedLinksApi.md#removesharedlinkassets) | **DELETE** /shared-links/{id}/assets | 
 *SharedLinksApi* | [**updateSharedLink**](doc//SharedLinksApi.md#updatesharedlink) | **PATCH** /shared-links/{id} | 
+*SitesURLApi* | [**createSitesUrl**](doc//SitesURLApi.md#createsitesurl) | **POST** /sites-url | 
+*SitesURLApi* | [**deleteSitesUrl**](doc//SitesURLApi.md#deletesitesurl) | **DELETE** /sites-url/{id} | 
+*SitesURLApi* | [**getAllSitesUrl**](doc//SitesURLApi.md#getallsitesurl) | **GET** /sites-url | 
+*SitesURLApi* | [**getSitesUrlById**](doc//SitesURLApi.md#getsitesurlbyid) | **GET** /sites-url/{id} | 
+*SitesURLApi* | [**getSitesUrlByUrl**](doc//SitesURLApi.md#getsitesurlbyurl) | **GET** /sites-url/url | 
+*SitesURLApi* | [**updateSitesUrl**](doc//SitesURLApi.md#updatesitesurl) | **PUT** /sites-url/{id} | 
+*SocialMediaApi* | [**createSocialMedia**](doc//SocialMediaApi.md#createsocialmedia) | **POST** /social-media | 
+*SocialMediaApi* | [**getAllSocialMedia**](doc//SocialMediaApi.md#getallsocialmedia) | **GET** /social-media | 
+*SocialMediaApi* | [**getSocialMediaById**](doc//SocialMediaApi.md#getsocialmediabyid) | **GET** /social-media/{id} | 
+*SocialMediaApi* | [**getSocialMediaByPersonId**](doc//SocialMediaApi.md#getsocialmediabypersonid) | **GET** /social-media/person/{personId} | 
+*SocialMediaApi* | [**updateSocialMedia**](doc//SocialMediaApi.md#updatesocialmedia) | **PUT** /social-media/{id} | 
 *StacksApi* | [**createStack**](doc//StacksApi.md#createstack) | **POST** /stacks | 
 *StacksApi* | [**deleteStack**](doc//StacksApi.md#deletestack) | **DELETE** /stacks/{id} | 
 *StacksApi* | [**deleteStacks**](doc//StacksApi.md#deletestacks) | **DELETE** /stacks | 
@@ -291,6 +303,7 @@ Class | Method | HTTP request | Description
  - [AlbumUserRole](doc//AlbumUserRole.md)
  - [AllJobStatusResponseDto](doc//AllJobStatusResponseDto.md)
  - [AssetBulkDeleteDto](doc//AssetBulkDeleteDto.md)
+ - [AssetBulkMoveDto](doc//AssetBulkMoveDto.md)
  - [AssetBulkUpdateDto](doc//AssetBulkUpdateDto.md)
  - [AssetBulkUploadCheckDto](doc//AssetBulkUploadCheckDto.md)
  - [AssetBulkUploadCheckItem](doc//AssetBulkUploadCheckItem.md)
@@ -334,6 +347,7 @@ Class | Method | HTTP request | Description
  - [CreateAlbumDto](doc//CreateAlbumDto.md)
  - [CreateLibraryDto](doc//CreateLibraryDto.md)
  - [CreateProfileImageResponseDto](doc//CreateProfileImageResponseDto.md)
+ - [CreateSocialMediaDto](doc//CreateSocialMediaDto.md)
  - [DatabaseBackupConfig](doc//DatabaseBackupConfig.md)
  - [DownloadArchiveInfo](doc//DownloadArchiveInfo.md)
  - [DownloadInfoDto](doc//DownloadInfoDto.md)
@@ -399,6 +413,7 @@ Class | Method | HTTP request | Description
  - [PeopleUpdateItem](doc//PeopleUpdateItem.md)
  - [Permission](doc//Permission.md)
  - [PersonCreateDto](doc//PersonCreateDto.md)
+ - [PersonRelationshipDto](doc//PersonRelationshipDto.md)
  - [PersonResponseDto](doc//PersonResponseDto.md)
  - [PersonStatisticsResponseDto](doc//PersonStatisticsResponseDto.md)
  - [PersonUpdateDto](doc//PersonUpdateDto.md)
@@ -415,6 +430,7 @@ Class | Method | HTTP request | Description
  - [RatingsUpdate](doc//RatingsUpdate.md)
  - [ReactionLevel](doc//ReactionLevel.md)
  - [ReactionType](doc//ReactionType.md)
+ - [RelatedPersonDto](doc//RelatedPersonDto.md)
  - [ReverseGeocodingStateResponseDto](doc//ReverseGeocodingStateResponseDto.md)
  - [SearchAlbumResponseDto](doc//SearchAlbumResponseDto.md)
  - [SearchAssetResponseDto](doc//SearchAssetResponseDto.md)
@@ -445,8 +461,13 @@ Class | Method | HTTP request | Description
  - [SharedLinkType](doc//SharedLinkType.md)
  - [SharedLinksResponse](doc//SharedLinksResponse.md)
  - [SharedLinksUpdate](doc//SharedLinksUpdate.md)
+ - [SideCarPersonDto](doc//SideCarPersonDto.md)
  - [SignUpDto](doc//SignUpDto.md)
+ - [SitesUrlCreateDto](doc//SitesUrlCreateDto.md)
+ - [SitesUrlResponseDto](doc//SitesUrlResponseDto.md)
+ - [SitesUrlUpdateDto](doc//SitesUrlUpdateDto.md)
  - [SmartSearchDto](doc//SmartSearchDto.md)
+ - [SocialMediaResponseDto](doc//SocialMediaResponseDto.md)
  - [SourceType](doc//SourceType.md)
  - [StackCreateDto](doc//StackCreateDto.md)
  - [StackResponseDto](doc//StackResponseDto.md)
@@ -520,6 +541,7 @@ Class | Method | HTTP request | Description
  - [UpdateAssetDto](doc//UpdateAssetDto.md)
  - [UpdateLibraryDto](doc//UpdateLibraryDto.md)
  - [UpdatePartnerDto](doc//UpdatePartnerDto.md)
+ - [UpdateSocialMediaDto](doc//UpdateSocialMediaDto.md)
  - [UsageByUserDto](doc//UsageByUserDto.md)
  - [UserAdminCreateDto](doc//UserAdminCreateDto.md)
  - [UserAdminDeleteDto](doc//UserAdminDeleteDto.md)

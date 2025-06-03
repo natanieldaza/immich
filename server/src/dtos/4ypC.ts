@@ -9,7 +9,7 @@ import {
   PersonWithFacesResponseDto,
   SideCarPersonDto,
   mapFacesWithoutPerson,
-  mapPerson
+  mapPerson,
 } from 'src/dtos/person.dto';
 import { TagResponseDto, mapTag } from 'src/dtos/tag.dto';
 import { UserResponseDto, mapUser } from 'src/dtos/user.dto';

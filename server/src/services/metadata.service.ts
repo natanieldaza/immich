@@ -1589,7 +1589,8 @@ export class MetadataService extends BaseService {
       taggedPeople,
       url,
       locationName,
-      locationURL
+      locationURL,
+      thumbnail: ''
     };
   }
 

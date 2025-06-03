@@ -1801,6 +1801,41 @@
         ]
       }
     },
+    "/assets/move": {
+      "put": {
+        "operationId": "moveAssets",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssetBulkMoveDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "tags": [
+          "Assets"
+        ]
+      }
+    },
     "/assets/random": {
       "get": {
         "deprecated": true,
@@ -6211,6 +6246,460 @@
         ]
       }
     },
+    "/sites-url": {
+      "get": {
+        "operationId": "getAllSitesUrl",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SitesUrlResponseDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "tags": [
+          "Sites URL"
+        ]
+      },
+      "post": {
+        "operationId": "createSitesUrl",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SitesUrlCreateDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SitesUrlResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "tags": [
+          "Sites URL"
+        ]
+      }
+    },
+    "/sites-url/url": {
+      "get": {
+        "operationId": "getSitesUrlByUrl",
+        "parameters": [
+          {
+            "name": "url",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SitesUrlResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "tags": [
+          "Sites URL"
+        ]
+      }
+    },
+    "/sites-url/{id}": {
+      "delete": {
+        "operationId": "deleteSitesUrl",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SitesUrlResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "tags": [
+          "Sites URL"
+        ]
+      },
+      "get": {
+        "operationId": "getSitesUrlById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SitesUrlResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "tags": [
+          "Sites URL"
+        ]
+      },
+      "put": {
+        "operationId": "updateSitesUrl",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SitesUrlUpdateDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SitesUrlResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "tags": [
+          "Sites URL"
+        ]
+      }
+    },
+    "/social-media": {
+      "get": {
+        "operationId": "getAllSocialMedia",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SocialMediaResponseDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "tags": [
+          "Social Media"
+        ]
+      },
+      "post": {
+        "operationId": "createSocialMedia",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSocialMediaDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SocialMediaResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "tags": [
+          "Social Media"
+        ]
+      }
+    },
+    "/social-media/person/{personId}": {
+      "get": {
+        "operationId": "getSocialMediaByPersonId",
+        "parameters": [
+          {
+            "name": "personId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SocialMediaResponseDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "tags": [
+          "Social Media"
+        ]
+      }
+    },
+    "/social-media/{id}": {
+      "get": {
+        "operationId": "getSocialMediaById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SocialMediaResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "tags": [
+          "Social Media"
+        ]
+      },
+      "put": {
+        "operationId": "updateSocialMedia",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSocialMediaDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SocialMediaResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "tags": [
+          "Social Media"
+        ]
+      }
+    },
     "/stacks": {
       "delete": {
         "operationId": "deleteStacks",
@@ -8557,6 +9046,13 @@
             },
             "type": "array"
           },
+          "childAlbums": {
+            "items": {
+              "$ref": "#/components/schemas/AlbumResponseDto"
+            },
+            "nullable": true,
+            "type": "array"
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string"
@@ -8593,6 +9089,14 @@
           },
           "ownerId": {
             "type": "string"
+          },
+          "parentAlbum": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AlbumResponseDto"
+              }
+            ],
+            "nullable": true
           },
           "shared": {
             "type": "boolean"
@@ -8729,6 +9233,9 @@
           "library": {
             "$ref": "#/components/schemas/JobStatusDto"
           },
+          "locationDataScrappingWeb": {
+            "$ref": "#/components/schemas/JobStatusDto"
+          },
           "metadataExtraction": {
             "$ref": "#/components/schemas/JobStatusDto"
           },
@@ -8738,6 +9245,12 @@
           "notifications": {
             "$ref": "#/components/schemas/JobStatusDto"
           },
+          "personDataScrapping": {
+            "$ref": "#/components/schemas/JobStatusDto"
+          },
+          "personSidecar": {
+            "$ref": "#/components/schemas/JobStatusDto"
+          },
           "search": {
             "$ref": "#/components/schemas/JobStatusDto"
           },
@@ -8745,6 +9258,12 @@
             "$ref": "#/components/schemas/JobStatusDto"
           },
           "smartSearch": {
+            "$ref": "#/components/schemas/JobStatusDto"
+          },
+          "socialMediaDataScrapping": {
+            "$ref": "#/components/schemas/JobStatusDto"
+          },
+          "socialMediaDataScrappingWeb": {
             "$ref": "#/components/schemas/JobStatusDto"
           },
           "storageTemplateMigration": {
@@ -8764,12 +9283,17 @@
           "faceDetection",
           "facialRecognition",
           "library",
+          "locationDataScrappingWeb",
           "metadataExtraction",
           "migration",
           "notifications",
+          "personDataScrapping",
+          "personSidecar",
           "search",
           "sidecar",
           "smartSearch",
+          "socialMediaDataScrapping",
+          "socialMediaDataScrappingWeb",
           "storageTemplateMigration",
           "thumbnailGeneration",
           "videoConversion"
@@ -8787,6 +9311,24 @@
               "type": "string"
             },
             "type": "array"
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "type": "object"
+      },
+      "AssetBulkMoveDto": {
+        "properties": {
+          "ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "newFolderPath": {
+            "type": "string"
           }
         },
         "required": [
@@ -9362,6 +9904,9 @@
       },
       "AssetResponseDto": {
         "properties": {
+          "assetUrl": {
+            "type": "string"
+          },
           "checksum": {
             "description": "base64 encoded sha1 hash",
             "type": "string"
@@ -9378,6 +9923,12 @@
           },
           "duration": {
             "type": "string"
+          },
+          "edgeRelatedPeople": {
+            "items": {
+              "$ref": "#/components/schemas/SideCarPersonDto"
+            },
+            "type": "array"
           },
           "exifInfo": {
             "$ref": "#/components/schemas/ExifResponseDto"
@@ -9422,6 +9973,21 @@
             "format": "date-time",
             "type": "string"
           },
+          "locationName": {
+            "type": "string"
+          },
+          "locationUrl": {
+            "type": "string"
+          },
+          "mainPerson": {
+            "$ref": "#/components/schemas/SideCarPersonDto"
+          },
+          "mentionedPeople": {
+            "items": {
+              "$ref": "#/components/schemas/SideCarPersonDto"
+            },
+            "type": "array"
+          },
           "originalFileName": {
             "type": "string"
           },
@@ -9436,6 +10002,9 @@
           },
           "ownerId": {
             "type": "string"
+          },
+          "ownerPerson": {
+            "$ref": "#/components/schemas/SideCarPersonDto"
           },
           "people": {
             "items": {
@@ -9455,6 +10024,12 @@
               }
             ],
             "nullable": true
+          },
+          "taggedPeople": {
+            "items": {
+              "$ref": "#/components/schemas/SideCarPersonDto"
+            },
+            "type": "array"
           },
           "tags": {
             "items": {
@@ -9777,6 +10352,10 @@
           },
           "description": {
             "type": "string"
+          },
+          "parentAlbumId": {
+            "format": "uuid",
+            "type": "string"
           }
         },
         "required": [
@@ -9844,6 +10423,67 @@
           "profileChangedAt",
           "profileImagePath",
           "userId"
+        ],
+        "type": "object"
+      },
+      "CreateSocialMediaDto": {
+        "properties": {
+          "OwnerId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "followers": {
+            "type": "number"
+          },
+          "following": {
+            "type": "number"
+          },
+          "lastDownloaded": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "lastDownloadedNode": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "personId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "platform": {
+            "type": "string"
+          },
+          "platformUserId": {
+            "type": "string"
+          },
+          "platformUserIdHash": {
+            "type": "string"
+          },
+          "posts": {
+            "type": "number"
+          },
+          "thumbnailPath": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "url": {
+            "format": "uri",
+            "type": "string"
+          }
+        },
+        "required": [
+          "OwnerId",
+          "platform",
+          "platformUserId",
+          "url"
         ],
         "type": "object"
       },
@@ -10229,7 +10869,8 @@
           "pause",
           "resume",
           "empty",
-          "clear-failed"
+          "clear-failed",
+          "stop"
         ],
         "type": "string"
       },
@@ -10313,7 +10954,12 @@
           "sidecar",
           "library",
           "notifications",
-          "backupDatabase"
+          "backupDatabase",
+          "personDataScrapping",
+          "socialMediaDataScrapping",
+          "socialMediaDataScrappingWeb",
+          "locationDataScrappingWeb",
+          "personSidecar"
         ],
         "type": "string"
       },
@@ -11304,9 +11950,17 @@
       },
       "PeopleUpdateItem": {
         "properties": {
+          "age": {
+            "nullable": true,
+            "type": "integer"
+          },
           "birthDate": {
             "description": "Person date of birth.\nNote: the mobile app cannot currently set the birth date to null.",
             "format": "date",
+            "nullable": true,
+            "type": "string"
+          },
+          "city": {
             "nullable": true,
             "type": "string"
           },
@@ -11314,10 +11968,23 @@
             "nullable": true,
             "type": "string"
           },
+          "country": {
+            "nullable": true,
+            "type": "string"
+          },
+          "description": {
+            "description": "Person description",
+            "nullable": true,
+            "type": "string"
+          },
           "featureFaceAssetId": {
             "description": "Asset is used to get the feature face thumbnail.",
             "format": "uuid",
             "type": "string"
+          },
+          "height": {
+            "nullable": true,
+            "type": "number"
           },
           "id": {
             "description": "Person id.",
@@ -11425,12 +12092,19 @@
           "admin.user.create",
           "admin.user.read",
           "admin.user.update",
-          "admin.user.delete"
+          "admin.user.delete",
+          "url.create",
+          "url.read",
+          "url.update"
         ],
         "type": "string"
       },
       "PersonCreateDto": {
         "properties": {
+          "age": {
+            "nullable": true,
+            "type": "integer"
+          },
           "birthDate": {
             "description": "Person date of birth.\nNote: the mobile app cannot currently set the birth date to null.",
             "format": "date",
@@ -11438,6 +12112,11 @@
             "type": "string"
           },
           "color": {
+            "nullable": true,
+            "type": "string"
+          },
+          "description": {
+            "description": "Person description",
             "nullable": true,
             "type": "string"
           },
@@ -11455,16 +12134,101 @@
         },
         "type": "object"
       },
+      "PersonRelationshipDto": {
+        "properties": {
+          "direction": {
+            "type": "object"
+          },
+          "personId": {
+            "type": "string"
+          },
+          "relatedPerson": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RelatedPersonDto"
+              }
+            ],
+            "nullable": true
+          },
+          "relatedPersonId": {
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "parent",
+              "child",
+              "sibling",
+              "spouse",
+              "grandparent",
+              "grandchild",
+              "uncle",
+              "aunt",
+              "nephew",
+              "niece",
+              "cousin",
+              "parent_in_law",
+              "child_in_law",
+              "sibling_in_law",
+              "friend",
+              "best_friend",
+              "acquaintance",
+              "friend_of_friend",
+              "colleague",
+              "supervisor",
+              "subordinate",
+              "business_partner",
+              "coauthor",
+              "classmate",
+              "teacher",
+              "student",
+              "teammate",
+              "neighbor",
+              "roommate",
+              "mentor",
+              "mentee"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "direction",
+          "personId",
+          "relatedPerson",
+          "relatedPersonId",
+          "type"
+        ],
+        "type": "object"
+      },
       "PersonResponseDto": {
         "properties": {
+          "age": {
+            "nullable": true,
+            "type": "number"
+          },
           "birthDate": {
             "format": "date",
+            "nullable": true,
+            "type": "string"
+          },
+          "city": {
             "nullable": true,
             "type": "string"
           },
           "color": {
             "description": "This property was added in v1.126.0",
             "type": "string"
+          },
+          "country": {
+            "nullable": true,
+            "type": "string"
+          },
+          "description": {
+            "nullable": true,
+            "type": "string"
+          },
+          "height": {
+            "nullable": true,
+            "type": "number"
           },
           "id": {
             "type": "string"
@@ -11478,6 +12242,21 @@
           },
           "name": {
             "type": "string"
+          },
+          "ownerId": {
+            "type": "string"
+          },
+          "relationships": {
+            "items": {
+              "$ref": "#/components/schemas/PersonRelationshipDto"
+            },
+            "type": "array"
+          },
+          "socialMedia": {
+            "items": {
+              "$ref": "#/components/schemas/SocialMediaResponseDto"
+            },
+            "type": "array"
           },
           "thumbnailPath": {
             "type": "string"
@@ -11510,9 +12289,17 @@
       },
       "PersonUpdateDto": {
         "properties": {
+          "age": {
+            "nullable": true,
+            "type": "integer"
+          },
           "birthDate": {
             "description": "Person date of birth.\nNote: the mobile app cannot currently set the birth date to null.",
             "format": "date",
+            "nullable": true,
+            "type": "string"
+          },
+          "city": {
             "nullable": true,
             "type": "string"
           },
@@ -11520,10 +12307,23 @@
             "nullable": true,
             "type": "string"
           },
+          "country": {
+            "nullable": true,
+            "type": "string"
+          },
+          "description": {
+            "description": "Person description",
+            "nullable": true,
+            "type": "string"
+          },
           "featureFaceAssetId": {
             "description": "Asset is used to get the feature face thumbnail.",
             "format": "uuid",
             "type": "string"
+          },
+          "height": {
+            "nullable": true,
+            "type": "number"
           },
           "isFavorite": {
             "type": "boolean"
@@ -11541,8 +12341,16 @@
       },
       "PersonWithFacesResponseDto": {
         "properties": {
+          "age": {
+            "nullable": true,
+            "type": "number"
+          },
           "birthDate": {
             "format": "date",
+            "nullable": true,
+            "type": "string"
+          },
+          "city": {
             "nullable": true,
             "type": "string"
           },
@@ -11550,11 +12358,23 @@
             "description": "This property was added in v1.126.0",
             "type": "string"
           },
+          "country": {
+            "nullable": true,
+            "type": "string"
+          },
+          "description": {
+            "nullable": true,
+            "type": "string"
+          },
           "faces": {
             "items": {
               "$ref": "#/components/schemas/AssetFaceWithoutPersonResponseDto"
             },
             "type": "array"
+          },
+          "height": {
+            "nullable": true,
+            "type": "number"
           },
           "id": {
             "type": "string"
@@ -11568,6 +12388,21 @@
           },
           "name": {
             "type": "string"
+          },
+          "ownerId": {
+            "type": "string"
+          },
+          "relationships": {
+            "items": {
+              "$ref": "#/components/schemas/PersonRelationshipDto"
+            },
+            "type": "array"
+          },
+          "socialMedia": {
+            "items": {
+              "$ref": "#/components/schemas/SocialMediaResponseDto"
+            },
+            "type": "array"
           },
           "thumbnailPath": {
             "type": "string"
@@ -11863,6 +12698,34 @@
           "like"
         ],
         "type": "string"
+      },
+      "RelatedPersonDto": {
+        "properties": {
+          "age": {
+            "nullable": true,
+            "type": "number"
+          },
+          "birthDate": {
+            "type": "object"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "thumbnailPath": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "age",
+          "birthDate",
+          "id",
+          "name",
+          "thumbnailPath"
+        ],
+        "type": "object"
       },
       "ReverseGeocodingStateResponseDto": {
         "properties": {
@@ -12711,6 +13574,57 @@
         },
         "type": "object"
       },
+      "SideCarPersonDto": {
+        "properties": {
+          "age": {
+            "nullable": true,
+            "type": "number"
+          },
+          "birthDate": {
+            "format": "date",
+            "nullable": true,
+            "type": "string"
+          },
+          "color": {
+            "description": "This property was added in v1.126.0",
+            "type": "string"
+          },
+          "hashId": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "socialMedia": {
+            "items": {
+              "$ref": "#/components/schemas/SocialMediaResponseDto"
+            },
+            "type": "array"
+          },
+          "thumbnailPath": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "username"
+        ],
+        "type": "object"
+      },
       "SignUpDto": {
         "properties": {
           "email": {
@@ -12732,6 +13646,124 @@
           "name",
           "password"
         ],
+        "type": "object"
+      },
+      "SitesUrlCreateDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "description": {
+            "nullable": true,
+            "type": "string"
+          },
+          "posts": {
+            "default": 0,
+            "type": "number"
+          },
+          "preference": {
+            "default": 0,
+            "type": "number"
+          },
+          "url": {
+            "type": "string"
+          },
+          "visitedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "createdAt",
+          "url"
+        ],
+        "type": "object"
+      },
+      "SitesUrlResponseDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "description": {
+            "nullable": true,
+            "type": "string"
+          },
+          "failed": {
+            "default": false,
+            "nullable": true,
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "posts": {
+            "default": 0,
+            "type": "number"
+          },
+          "preference": {
+            "default": 0,
+            "type": "number"
+          },
+          "runAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "visitedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "createdAt",
+          "id",
+          "url"
+        ],
+        "type": "object"
+      },
+      "SitesUrlUpdateDto": {
+        "properties": {
+          "description": {
+            "nullable": true,
+            "type": "string"
+          },
+          "failed": {
+            "default": false,
+            "nullable": true,
+            "type": "boolean"
+          },
+          "posts": {
+            "default": 0,
+            "type": "number"
+          },
+          "preference": {
+            "default": 0,
+            "type": "number"
+          },
+          "runAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "url": {
+            "nullable": true,
+            "type": "string"
+          },
+          "visitedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "SmartSearchDto": {
@@ -12871,6 +13903,66 @@
         },
         "required": [
           "query"
+        ],
+        "type": "object"
+      },
+      "SocialMediaResponseDto": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "followers": {
+            "type": "number"
+          },
+          "following": {
+            "type": "number"
+          },
+          "id": {
+            "type": "string"
+          },
+          "lastDownloaded": {
+            "format": "date",
+            "type": "string"
+          },
+          "lastDownloadedNode": {
+            "format": "date",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "personId": {
+            "type": "string"
+          },
+          "platform": {
+            "type": "string"
+          },
+          "platformUserId": {
+            "type": "string"
+          },
+          "platformUserIdHash": {
+            "type": "string"
+          },
+          "posts": {
+            "type": "number"
+          },
+          "thumbnailPath": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date",
+            "type": "string"
+          },
+          "url": {
+            "format": "uri",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "platform",
+          "platformUserId",
+          "url"
         ],
         "type": "object"
       },
@@ -13743,6 +14835,9 @@
           "library": {
             "$ref": "#/components/schemas/JobSettingsDto"
           },
+          "locationDataScrappingWeb": {
+            "$ref": "#/components/schemas/JobSettingsDto"
+          },
           "metadataExtraction": {
             "$ref": "#/components/schemas/JobSettingsDto"
           },
@@ -13752,6 +14847,12 @@
           "notifications": {
             "$ref": "#/components/schemas/JobSettingsDto"
           },
+          "personDataScrapping": {
+            "$ref": "#/components/schemas/JobSettingsDto"
+          },
+          "personSidecar": {
+            "$ref": "#/components/schemas/JobSettingsDto"
+          },
           "search": {
             "$ref": "#/components/schemas/JobSettingsDto"
           },
@@ -13759,6 +14860,12 @@
             "$ref": "#/components/schemas/JobSettingsDto"
           },
           "smartSearch": {
+            "$ref": "#/components/schemas/JobSettingsDto"
+          },
+          "socialMediaDataScrapping": {
+            "$ref": "#/components/schemas/JobSettingsDto"
+          },
+          "socialMediaDataScrappingWeb": {
             "$ref": "#/components/schemas/JobSettingsDto"
           },
           "thumbnailGeneration": {
@@ -13772,12 +14879,17 @@
           "backgroundTask",
           "faceDetection",
           "library",
+          "locationDataScrappingWeb",
           "metadataExtraction",
           "migration",
           "notifications",
+          "personDataScrapping",
+          "personSidecar",
           "search",
           "sidecar",
           "smartSearch",
+          "socialMediaDataScrapping",
+          "socialMediaDataScrappingWeb",
           "thumbnailGeneration",
           "videoConversion"
         ],
@@ -14639,6 +15751,10 @@
                 "$ref": "#/components/schemas/AssetOrder"
               }
             ]
+          },
+          "parentAlbumId": {
+            "format": "uuid",
+            "type": "string"
           }
         },
         "type": "object"
@@ -14685,6 +15801,9 @@
             "minimum": -1,
             "type": "number"
           },
+          "viewed": {
+            "type": "boolean"
+          },
           "visibility": {
             "allOf": [
               {
@@ -14727,6 +15846,72 @@
         },
         "required": [
           "inTimeline"
+        ],
+        "type": "object"
+      },
+      "UpdateSocialMediaDto": {
+        "properties": {
+          "OwnerId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "followers": {
+            "type": "number"
+          },
+          "following": {
+            "type": "number"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "lastDownloaded": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "lastDownloadedNode": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "personId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "platform": {
+            "type": "string"
+          },
+          "platformUserId": {
+            "type": "string"
+          },
+          "platformUserIdHash": {
+            "type": "string"
+          },
+          "posts": {
+            "type": "number"
+          },
+          "thumbnailPath": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "url": {
+            "format": "uri",
+            "type": "string"
+          }
+        },
+        "required": [
+          "OwnerId",
+          "id",
+          "platform",
+          "platformUserId",
+          "url"
         ],
         "type": "object"
       },

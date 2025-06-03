@@ -463,6 +463,45 @@ class AssetsApi {
     return null;
   }
 
+  /// Performs an HTTP 'PUT /assets/move' operation and returns the [Response].
+  /// Parameters:
+  ///
+  /// * [AssetBulkMoveDto] assetBulkMoveDto (required):
+  Future<Response> moveAssetsWithHttpInfo(AssetBulkMoveDto assetBulkMoveDto,) async {
+    // ignore: prefer_const_declarations
+    final apiPath = r'/assets/move';
+
+    // ignore: prefer_final_locals
+    Object? postBody = assetBulkMoveDto;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>['application/json'];
+
+
+    return apiClient.invokeAPI(
+      apiPath,
+      'PUT',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+    );
+  }
+
+  /// Parameters:
+  ///
+  /// * [AssetBulkMoveDto] assetBulkMoveDto (required):
+  Future<void> moveAssets(AssetBulkMoveDto assetBulkMoveDto,) async {
+    final response = await moveAssetsWithHttpInfo(assetBulkMoveDto,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+  }
+
   /// Performs an HTTP 'GET /assets/{id}/video/playback' operation and returns the [Response].
   /// Parameters:
   ///

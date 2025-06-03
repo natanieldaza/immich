@@ -13,9 +13,9 @@
     createSitesUrl,
     deleteSitesUrl,
     getAllSitesUrl,
-    SitesUrlCreateDto,
-    SitesUrlResponseDto,
-    SitesUrlUpdateDto,
+    type SitesUrlCreateDto,
+    type SitesUrlResponseDto,
+    type SitesUrlUpdateDto,
     updateSitesUrl,
   } from '@immich/sdk';
   import { mdiEyeOutline } from '@mdi/js';
@@ -32,7 +32,7 @@
 
   const urls = writable<SitesUrlResponseDto[]>(data.urls);
 
-  let search = '';
+  let search = $state('');
   let sortKey: keyof SitesUrlResponseDto = 'createdAt';
   let sortAsc = true;
   let pager = $state(1);
@@ -93,6 +93,7 @@
       url: 'https://',
       description: '',
       preference: 3, // default preference
+      posts: 0, // default posts
     };
     isNew = true;
     showEditModal = true;
@@ -111,6 +112,7 @@
         url: editingItem.url.trim(),
         description: editingItem.description?.trim() ?? null,
         preference: Number(editingItem.preference) || 1,
+        posts: editingItem.posts || 0, // default to 0 if not provided
       };
 
       if (!payload.url || typeof payload.url !== 'string' || !payload.url.startsWith('http')) {
@@ -129,6 +131,7 @@
               url: payload.url,
               description: payload.description,
               preference: payload.preference,
+              posts: payload.posts || 0, // default to 0 if not provided
             },
           });
         } catch (error) {
@@ -141,6 +144,7 @@
             url: payload.url,
             description: payload.description,
             preference: payload.preference,
+            posts: payload.posts,
           }).filter(([_, v]) => v !== undefined),
         );
 
@@ -179,6 +183,7 @@
     try {
       const payload: SitesUrlUpdateDto = {
         url: item.url,
+        posts: item.posts,
         description: item.description,
         preference: Number(item.preference),
       };
@@ -226,6 +231,7 @@
         <thead class="bg-gray-100">
           <tr>
             <th class="p-2 cursor-pointer" on:click={() => toggleSort('url')}>URL</th>
+            <th class="p-2 cursor-pointer" on:click={() => toggleSort('posts')}>POSTS</th>
             <th class="p-2 cursor-pointer" on:click={() => toggleSort('description')}>Description</th>
             <th class="p-2 cursor-pointer" on:click={() => toggleSort('createdAt')}>Created</th>
             <th class="p-2 cursor-pointer" on:click={() => toggleSort('visitedAt')}>Visited</th>
@@ -237,6 +243,7 @@
           {#each getPaginated() as item}
             <tr class="border-t hover:bg-gray-50">
               <td class="p-2 break-words">{item.url}</td>
+              <td class="p-2">{item.posts ?? '-'}</td>
               <td class="p-2 break-words">{item.description ?? '-'}</td>
               <td class="p-2">{item.createdAt ? new Date(item.createdAt).toLocaleString() : '-'}</td>
               <td class="p-2">{item.visitedAt ? new Date(item.visitedAt).toLocaleString() : '-'}</td>
@@ -258,6 +265,10 @@
           <div class="mb-2">
             <strong>URL:</strong>
             <div class="break-words">{item.url}</div>
+          </div>
+          <div class="mb-2">
+            <strong>POSTS:</strong>
+            <div class="break-words">{item.posts ?? 0}</div>
           </div>
           <div class="mb-2">
             <strong>Description:</strong>
@@ -298,6 +309,7 @@
         <h3 class="text-lg font-bold">{isNew ? 'Add New URL' : 'Edit URL'}</h3>
 
         <input class="w-full border p-2" placeholder="URL" bind:value={editingItem.url} />
+        <input class="w-full border p-2" placeholder="POSTS" bind:value={editingItem.posts} />
         <textarea class="w-full border p-2" placeholder="Description" bind:value={editingItem.description}></textarea>
         <label class="flex flex-col gap-2">
           <span>Preference (1–5)</span>

@@ -19,12 +19,17 @@ class AllJobStatusResponseDto {
     required this.faceDetection,
     required this.facialRecognition,
     required this.library_,
+    required this.locationDataScrappingWeb,
     required this.metadataExtraction,
     required this.migration,
     required this.notifications,
+    required this.personDataScrapping,
+    required this.personSidecar,
     required this.search,
     required this.sidecar,
     required this.smartSearch,
+    required this.socialMediaDataScrapping,
+    required this.socialMediaDataScrappingWeb,
     required this.storageTemplateMigration,
     required this.thumbnailGeneration,
     required this.videoConversion,
@@ -42,17 +47,27 @@ class AllJobStatusResponseDto {
 
   JobStatusDto library_;
 
+  JobStatusDto locationDataScrappingWeb;
+
   JobStatusDto metadataExtraction;
 
   JobStatusDto migration;
 
   JobStatusDto notifications;
 
+  JobStatusDto personDataScrapping;
+
+  JobStatusDto personSidecar;
+
   JobStatusDto search;
 
   JobStatusDto sidecar;
 
   JobStatusDto smartSearch;
+
+  JobStatusDto socialMediaDataScrapping;
+
+  JobStatusDto socialMediaDataScrappingWeb;
 
   JobStatusDto storageTemplateMigration;
 
@@ -68,12 +83,17 @@ class AllJobStatusResponseDto {
     other.faceDetection == faceDetection &&
     other.facialRecognition == facialRecognition &&
     other.library_ == library_ &&
+    other.locationDataScrappingWeb == locationDataScrappingWeb &&
     other.metadataExtraction == metadataExtraction &&
     other.migration == migration &&
     other.notifications == notifications &&
+    other.personDataScrapping == personDataScrapping &&
+    other.personSidecar == personSidecar &&
     other.search == search &&
     other.sidecar == sidecar &&
     other.smartSearch == smartSearch &&
+    other.socialMediaDataScrapping == socialMediaDataScrapping &&
+    other.socialMediaDataScrappingWeb == socialMediaDataScrappingWeb &&
     other.storageTemplateMigration == storageTemplateMigration &&
     other.thumbnailGeneration == thumbnailGeneration &&
     other.videoConversion == videoConversion;
@@ -87,18 +107,23 @@ class AllJobStatusResponseDto {
     (faceDetection.hashCode) +
     (facialRecognition.hashCode) +
     (library_.hashCode) +
+    (locationDataScrappingWeb.hashCode) +
     (metadataExtraction.hashCode) +
     (migration.hashCode) +
     (notifications.hashCode) +
+    (personDataScrapping.hashCode) +
+    (personSidecar.hashCode) +
     (search.hashCode) +
     (sidecar.hashCode) +
     (smartSearch.hashCode) +
+    (socialMediaDataScrapping.hashCode) +
+    (socialMediaDataScrappingWeb.hashCode) +
     (storageTemplateMigration.hashCode) +
     (thumbnailGeneration.hashCode) +
     (videoConversion.hashCode);
 
   @override
-  String toString() => 'AllJobStatusResponseDto[backgroundTask=$backgroundTask, backupDatabase=$backupDatabase, duplicateDetection=$duplicateDetection, faceDetection=$faceDetection, facialRecognition=$facialRecognition, library_=$library_, metadataExtraction=$metadataExtraction, migration=$migration, notifications=$notifications, search=$search, sidecar=$sidecar, smartSearch=$smartSearch, storageTemplateMigration=$storageTemplateMigration, thumbnailGeneration=$thumbnailGeneration, videoConversion=$videoConversion]';
+  String toString() => 'AllJobStatusResponseDto[backgroundTask=$backgroundTask, backupDatabase=$backupDatabase, duplicateDetection=$duplicateDetection, faceDetection=$faceDetection, facialRecognition=$facialRecognition, library_=$library_, locationDataScrappingWeb=$locationDataScrappingWeb, metadataExtraction=$metadataExtraction, migration=$migration, notifications=$notifications, personDataScrapping=$personDataScrapping, personSidecar=$personSidecar, search=$search, sidecar=$sidecar, smartSearch=$smartSearch, socialMediaDataScrapping=$socialMediaDataScrapping, socialMediaDataScrappingWeb=$socialMediaDataScrappingWeb, storageTemplateMigration=$storageTemplateMigration, thumbnailGeneration=$thumbnailGeneration, videoConversion=$videoConversion]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -108,12 +133,17 @@ class AllJobStatusResponseDto {
       json[r'faceDetection'] = this.faceDetection;
       json[r'facialRecognition'] = this.facialRecognition;
       json[r'library'] = this.library_;
+      json[r'locationDataScrappingWeb'] = this.locationDataScrappingWeb;
       json[r'metadataExtraction'] = this.metadataExtraction;
       json[r'migration'] = this.migration;
       json[r'notifications'] = this.notifications;
+      json[r'personDataScrapping'] = this.personDataScrapping;
+      json[r'personSidecar'] = this.personSidecar;
       json[r'search'] = this.search;
       json[r'sidecar'] = this.sidecar;
       json[r'smartSearch'] = this.smartSearch;
+      json[r'socialMediaDataScrapping'] = this.socialMediaDataScrapping;
+      json[r'socialMediaDataScrappingWeb'] = this.socialMediaDataScrappingWeb;
       json[r'storageTemplateMigration'] = this.storageTemplateMigration;
       json[r'thumbnailGeneration'] = this.thumbnailGeneration;
       json[r'videoConversion'] = this.videoConversion;
@@ -135,12 +165,17 @@ class AllJobStatusResponseDto {
         faceDetection: JobStatusDto.fromJson(json[r'faceDetection'])!,
         facialRecognition: JobStatusDto.fromJson(json[r'facialRecognition'])!,
         library_: JobStatusDto.fromJson(json[r'library'])!,
+        locationDataScrappingWeb: JobStatusDto.fromJson(json[r'locationDataScrappingWeb'])!,
         metadataExtraction: JobStatusDto.fromJson(json[r'metadataExtraction'])!,
         migration: JobStatusDto.fromJson(json[r'migration'])!,
         notifications: JobStatusDto.fromJson(json[r'notifications'])!,
+        personDataScrapping: JobStatusDto.fromJson(json[r'personDataScrapping'])!,
+        personSidecar: JobStatusDto.fromJson(json[r'personSidecar'])!,
         search: JobStatusDto.fromJson(json[r'search'])!,
         sidecar: JobStatusDto.fromJson(json[r'sidecar'])!,
         smartSearch: JobStatusDto.fromJson(json[r'smartSearch'])!,
+        socialMediaDataScrapping: JobStatusDto.fromJson(json[r'socialMediaDataScrapping'])!,
+        socialMediaDataScrappingWeb: JobStatusDto.fromJson(json[r'socialMediaDataScrappingWeb'])!,
         storageTemplateMigration: JobStatusDto.fromJson(json[r'storageTemplateMigration'])!,
         thumbnailGeneration: JobStatusDto.fromJson(json[r'thumbnailGeneration'])!,
         videoConversion: JobStatusDto.fromJson(json[r'videoConversion'])!,
@@ -197,12 +232,17 @@ class AllJobStatusResponseDto {
     'faceDetection',
     'facialRecognition',
     'library',
+    'locationDataScrappingWeb',
     'metadataExtraction',
     'migration',
     'notifications',
+    'personDataScrapping',
+    'personSidecar',
     'search',
     'sidecar',
     'smartSearch',
+    'socialMediaDataScrapping',
+    'socialMediaDataScrappingWeb',
     'storageTemplateMigration',
     'thumbnailGeneration',
     'videoConversion',

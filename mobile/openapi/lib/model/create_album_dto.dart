@@ -17,6 +17,7 @@ class CreateAlbumDto {
     this.albumUsers = const [],
     this.assetIds = const [],
     this.description,
+    this.parentAlbumId,
   });
 
   String albumName;
@@ -33,12 +34,21 @@ class CreateAlbumDto {
   ///
   String? description;
 
+  ///
+  /// Please note: This property should have been non-nullable! Since the specification file
+  /// does not include a default value (using the "default:" property), however, the generated
+  /// source code must fall back to having a nullable type.
+  /// Consider adding a "default:" property in the specification file to hide this note.
+  ///
+  String? parentAlbumId;
+
   @override
   bool operator ==(Object other) => identical(this, other) || other is CreateAlbumDto &&
     other.albumName == albumName &&
     _deepEquality.equals(other.albumUsers, albumUsers) &&
     _deepEquality.equals(other.assetIds, assetIds) &&
-    other.description == description;
+    other.description == description &&
+    other.parentAlbumId == parentAlbumId;
 
   @override
   int get hashCode =>
@@ -46,10 +56,11 @@ class CreateAlbumDto {
     (albumName.hashCode) +
     (albumUsers.hashCode) +
     (assetIds.hashCode) +
-    (description == null ? 0 : description!.hashCode);
+    (description == null ? 0 : description!.hashCode) +
+    (parentAlbumId == null ? 0 : parentAlbumId!.hashCode);
 
   @override
-  String toString() => 'CreateAlbumDto[albumName=$albumName, albumUsers=$albumUsers, assetIds=$assetIds, description=$description]';
+  String toString() => 'CreateAlbumDto[albumName=$albumName, albumUsers=$albumUsers, assetIds=$assetIds, description=$description, parentAlbumId=$parentAlbumId]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -60,6 +71,11 @@ class CreateAlbumDto {
       json[r'description'] = this.description;
     } else {
     //  json[r'description'] = null;
+    }
+    if (this.parentAlbumId != null) {
+      json[r'parentAlbumId'] = this.parentAlbumId;
+    } else {
+    //  json[r'parentAlbumId'] = null;
     }
     return json;
   }
@@ -79,6 +95,7 @@ class CreateAlbumDto {
             ? (json[r'assetIds'] as Iterable).cast<String>().toList(growable: false)
             : const [],
         description: mapValueOfType<String>(json, r'description'),
+        parentAlbumId: mapValueOfType<String>(json, r'parentAlbumId'),
       );
     }
     return null;

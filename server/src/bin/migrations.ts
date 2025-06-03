@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-process.env.DB_URL = process.env.DB_URL || 'postgres://postgres:postgres@localhost:5432/immich';
+process.env.DB_URL = process.env.DB_URL || 'postgres://postgres:localImmich@localhost:5432/immich';
 
 import { Kysely, sql } from 'kysely';
 import { mkdirSync, writeFileSync } from 'node:fs';
