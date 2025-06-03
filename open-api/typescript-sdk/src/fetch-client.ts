@@ -252,6 +252,37 @@ export type AlbumUserResponseDto = {
     role: AlbumUserRole;
     user: UserResponseDto;
 };
+export type SocialMediaResponseDto = {
+    description?: string;
+    followers?: number;
+    following?: number;
+    id: string;
+    lastDownloaded?: string;
+    lastDownloadedNode?: string;
+    name?: string;
+    personId?: string;
+    platform: string;
+    platformUserId: string;
+    platformUserIdHash?: string;
+    posts?: number;
+    thumbnailPath?: string;
+    updatedAt?: string;
+    url: string;
+};
+export type SideCarPersonDto = {
+    age?: number | null;
+    birthDate?: string | null;
+    /** This property was added in v1.126.0 */
+    color?: string;
+    hashId?: string;
+    id: string;
+    name: string;
+    socialMedia?: SocialMediaResponseDto[];
+    thumbnailPath?: string;
+    updatedAt?: string;
+    url?: string;
+    username: string;
+};
 export type ExifResponseDto = {
     city?: string | null;
     country?: string | null;
@@ -286,16 +317,38 @@ export type AssetFaceWithoutPersonResponseDto = {
     imageWidth: number;
     sourceType?: SourceType;
 };
+export type RelatedPersonDto = {
+    age: number | null;
+    birthDate: object;
+    id: string;
+    name: string;
+    thumbnailPath: string;
+};
+export type PersonRelationshipDto = {
+    direction: object;
+    personId: string;
+    relatedPerson: (RelatedPersonDto) | null;
+    relatedPersonId: string;
+    "type": Type;
+};
 export type PersonWithFacesResponseDto = {
+    age?: number | null;
     birthDate: string | null;
+    city?: string | null;
     /** This property was added in v1.126.0 */
     color?: string;
+    country?: string | null;
+    description?: string | null;
     faces: AssetFaceWithoutPersonResponseDto[];
+    height?: number | null;
     id: string;
     /** This property was added in v1.126.0 */
     isFavorite?: boolean;
     isHidden: boolean;
     name: string;
+    ownerId?: string;
+    relationships?: PersonRelationshipDto[];
+    socialMedia?: SocialMediaResponseDto[];
     thumbnailPath: string;
     /** This property was added in v1.107.0 */
     updatedAt?: string;
@@ -315,12 +368,14 @@ export type TagResponseDto = {
     value: string;
 };
 export type AssetResponseDto = {
+    assetUrl?: string;
     /** base64 encoded sha1 hash */
     checksum: string;
     deviceAssetId: string;
     deviceId: string;
     duplicateId?: string | null;
     duration: string;
+    edgeRelatedPeople?: SideCarPersonDto[];
     exifInfo?: ExifResponseDto;
     /** The actual UTC timestamp when the file was created/captured, preserving timezone information. This is the authoritative timestamp for chronological sorting within timeline groups. Combined with timezone data, this can be used to determine the exact moment the photo was taken. */
     fileCreatedAt: string;
@@ -337,15 +392,21 @@ export type AssetResponseDto = {
     livePhotoVideoId?: string | null;
     /** The local date and time when the photo/video was taken, derived from EXIF metadata. This represents the photographer's local time regardless of timezone, stored as a timezone-agnostic timestamp. Used for timeline grouping by "local" days and months. */
     localDateTime: string;
+    locationName?: string;
+    locationUrl?: string;
+    mainPerson?: SideCarPersonDto;
+    mentionedPeople?: SideCarPersonDto[];
     originalFileName: string;
     originalMimeType?: string;
     originalPath: string;
     owner?: UserResponseDto;
     ownerId: string;
+    ownerPerson?: SideCarPersonDto;
     people?: PersonWithFacesResponseDto[];
     /** This property was deprecated in v1.113.0 */
     resized?: boolean;
     stack?: (AssetStackResponseDto) | null;
+    taggedPeople?: SideCarPersonDto[];
     tags?: TagResponseDto[];
     thumbhash: string | null;
     "type": AssetTypeEnum;
@@ -360,6 +421,7 @@ export type AlbumResponseDto = {
     albumUsers: AlbumUserResponseDto[];
     assetCount: number;
     assets: AssetResponseDto[];
+    childAlbums?: AlbumResponseDto[] | null;
     createdAt: string;
     description: string;
     endDate?: string;
@@ -370,6 +432,7 @@ export type AlbumResponseDto = {
     order?: AssetOrder;
     owner: UserResponseDto;
     ownerId: string;
+    parentAlbum?: (AlbumResponseDto) | null;
     shared: boolean;
     startDate?: string;
     updatedAt: string;
@@ -383,6 +446,7 @@ export type CreateAlbumDto = {
     albumUsers?: AlbumUserCreateDto[];
     assetIds?: string[];
     description?: string;
+    parentAlbumId?: string;
 };
 export type AlbumStatisticsResponseDto = {
     notShared: number;
@@ -395,6 +459,7 @@ export type UpdateAlbumDto = {
     description?: string;
     isActivityEnabled?: boolean;
     order?: AssetOrder;
+    parentAlbumId?: string;
 };
 export type BulkIdsDto = {
     ids: string[];
@@ -494,6 +559,10 @@ export type AssetJobsDto = {
     assetIds: string[];
     name: AssetJobName;
 };
+export type AssetBulkMoveDto = {
+    ids: string[];
+    newFolderPath?: string;
+};
 export type UpdateAssetDto = {
     dateTimeOriginal?: string;
     description?: string;
@@ -502,6 +571,7 @@ export type UpdateAssetDto = {
     livePhotoVideoId?: string | null;
     longitude?: number;
     rating?: number;
+    viewed?: boolean;
     visibility?: AssetVisibility;
 };
 export type AssetMediaReplaceDto = {
@@ -588,14 +658,22 @@ export type DuplicateResponseDto = {
     duplicateId: string;
 };
 export type PersonResponseDto = {
+    age?: number | null;
     birthDate: string | null;
+    city?: string | null;
     /** This property was added in v1.126.0 */
     color?: string;
+    country?: string | null;
+    description?: string | null;
+    height?: number | null;
     id: string;
     /** This property was added in v1.126.0 */
     isFavorite?: boolean;
     isHidden: boolean;
     name: string;
+    ownerId?: string;
+    relationships?: PersonRelationshipDto[];
+    socialMedia?: SocialMediaResponseDto[];
     thumbnailPath: string;
     /** This property was added in v1.107.0 */
     updatedAt?: string;
@@ -650,12 +728,17 @@ export type AllJobStatusResponseDto = {
     faceDetection: JobStatusDto;
     facialRecognition: JobStatusDto;
     library: JobStatusDto;
+    locationDataScrappingWeb: JobStatusDto;
     metadataExtraction: JobStatusDto;
     migration: JobStatusDto;
     notifications: JobStatusDto;
+    personDataScrapping: JobStatusDto;
+    personSidecar: JobStatusDto;
     search: JobStatusDto;
     sidecar: JobStatusDto;
     smartSearch: JobStatusDto;
+    socialMediaDataScrapping: JobStatusDto;
+    socialMediaDataScrappingWeb: JobStatusDto;
     storageTemplateMigration: JobStatusDto;
     thumbnailGeneration: JobStatusDto;
     videoConversion: JobStatusDto;
@@ -797,10 +880,13 @@ export type PeopleResponseDto = {
     total: number;
 };
 export type PersonCreateDto = {
+    age?: number | null;
     /** Person date of birth.
     Note: the mobile app cannot currently set the birth date to null. */
     birthDate?: string | null;
     color?: string | null;
+    /** Person description */
+    description?: string | null;
     isFavorite?: boolean;
     /** Person visibility */
     isHidden?: boolean;
@@ -808,12 +894,18 @@ export type PersonCreateDto = {
     name?: string;
 };
 export type PeopleUpdateItem = {
+    age?: number | null;
     /** Person date of birth.
     Note: the mobile app cannot currently set the birth date to null. */
     birthDate?: string | null;
+    city?: string | null;
     color?: string | null;
+    country?: string | null;
+    /** Person description */
+    description?: string | null;
     /** Asset is used to get the feature face thumbnail. */
     featureFaceAssetId?: string;
+    height?: number | null;
     /** Person id. */
     id: string;
     isFavorite?: boolean;
@@ -826,12 +918,18 @@ export type PeopleUpdateDto = {
     people: PeopleUpdateItem[];
 };
 export type PersonUpdateDto = {
+    age?: number | null;
     /** Person date of birth.
     Note: the mobile app cannot currently set the birth date to null. */
     birthDate?: string | null;
+    city?: string | null;
     color?: string | null;
+    country?: string | null;
+    /** Person description */
+    description?: string | null;
     /** Asset is used to get the feature face thumbnail. */
     featureFaceAssetId?: string;
+    height?: number | null;
     isFavorite?: boolean;
     /** Person visibility */
     isHidden?: boolean;
@@ -1226,6 +1324,64 @@ export type AssetIdsResponseDto = {
     error?: Error2;
     success: boolean;
 };
+export type SitesUrlResponseDto = {
+    createdAt: string | null;
+    description?: string | null;
+    id: string;
+    posts?: number;
+    preference?: number;
+    url: string;
+    visitedAt?: string | null;
+};
+export type SitesUrlCreateDto = {
+    createdAt: string | null;
+    description?: string | null;
+    posts?: number;
+    preference?: number;
+    url: string;
+    visitedAt?: string | null;
+};
+export type SitesUrlUpdateDto = {
+    description?: string | null;
+    preference?: number;
+    url?: string | null;
+    visitedAt?: string | null;
+};
+export type CreateSocialMediaDto = {
+    OwnerId: string;
+    description?: string;
+    followers?: number;
+    following?: number;
+    lastDownloaded?: string;
+    lastDownloadedNode?: string;
+    name?: string;
+    personId?: string;
+    platform: string;
+    platformUserId: string;
+    platformUserIdHash?: string;
+    posts?: number;
+    thumbnailPath?: string;
+    updatedAt?: string;
+    url: string;
+};
+export type UpdateSocialMediaDto = {
+    OwnerId: string;
+    description?: string;
+    followers?: number;
+    following?: number;
+    id: string;
+    lastDownloaded?: string;
+    lastDownloadedNode?: string;
+    name?: string;
+    personId?: string;
+    platform: string;
+    platformUserId: string;
+    platformUserIdHash?: string;
+    posts?: number;
+    thumbnailPath?: string;
+    updatedAt?: string;
+    url: string;
+};
 export type StackResponseDto = {
     assets: AssetResponseDto[];
     id: string;
@@ -1321,12 +1477,17 @@ export type SystemConfigJobDto = {
     backgroundTask: JobSettingsDto;
     faceDetection: JobSettingsDto;
     library: JobSettingsDto;
+    locationDataScrappingWeb: JobSettingsDto;
     metadataExtraction: JobSettingsDto;
     migration: JobSettingsDto;
     notifications: JobSettingsDto;
+    personDataScrapping: JobSettingsDto;
+    personSidecar: JobSettingsDto;
     search: JobSettingsDto;
     sidecar: JobSettingsDto;
     smartSearch: JobSettingsDto;
+    socialMediaDataScrapping: JobSettingsDto;
+    socialMediaDataScrappingWeb: JobSettingsDto;
     thumbnailGeneration: JobSettingsDto;
     videoConversion: JobSettingsDto;
 };
@@ -2033,6 +2194,15 @@ export function runAssetJobs({ assetJobsDto }: {
         ...opts,
         method: "POST",
         body: assetJobsDto
+    })));
+}
+export function moveAssets({ assetBulkMoveDto }: {
+    assetBulkMoveDto: AssetBulkMoveDto;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchText("/assets/move", oazapfts.json({
+        ...opts,
+        method: "PUT",
+        body: assetBulkMoveDto
     })));
 }
 /**
@@ -3263,6 +3433,125 @@ export function addSharedLinkAssets({ id, key, assetIdsDto }: {
         body: assetIdsDto
     })));
 }
+export function getAllSitesUrl(opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: SitesUrlResponseDto[];
+    }>("/sites-url", {
+        ...opts
+    }));
+}
+export function createSitesUrl({ sitesUrlCreateDto }: {
+    sitesUrlCreateDto: SitesUrlCreateDto;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 201;
+        data: SitesUrlResponseDto;
+    }>("/sites-url", oazapfts.json({
+        ...opts,
+        method: "POST",
+        body: sitesUrlCreateDto
+    })));
+}
+export function getSitesUrlByUrl({ url }: {
+    url: string;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: SitesUrlResponseDto;
+    }>(`/sites-url/url${QS.query(QS.explode({
+        url
+    }))}`, {
+        ...opts
+    }));
+}
+export function deleteSitesUrl({ id }: {
+    id: string;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: SitesUrlResponseDto;
+    }>(`/sites-url/${encodeURIComponent(id)}`, {
+        ...opts,
+        method: "DELETE"
+    }));
+}
+export function getSitesUrlById({ id }: {
+    id: string;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: SitesUrlResponseDto;
+    }>(`/sites-url/${encodeURIComponent(id)}`, {
+        ...opts
+    }));
+}
+export function updateSitesUrl({ id, sitesUrlUpdateDto }: {
+    id: string;
+    sitesUrlUpdateDto: SitesUrlUpdateDto;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: SitesUrlResponseDto;
+    }>(`/sites-url/${encodeURIComponent(id)}`, oazapfts.json({
+        ...opts,
+        method: "PUT",
+        body: sitesUrlUpdateDto
+    })));
+}
+export function getAllSocialMedia(opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: SocialMediaResponseDto[];
+    }>("/social-media", {
+        ...opts
+    }));
+}
+export function createSocialMedia({ createSocialMediaDto }: {
+    createSocialMediaDto: CreateSocialMediaDto;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 201;
+        data: SocialMediaResponseDto;
+    }>("/social-media", oazapfts.json({
+        ...opts,
+        method: "POST",
+        body: createSocialMediaDto
+    })));
+}
+export function getSocialMediaByPersonId({ personId }: {
+    personId: string;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: SocialMediaResponseDto[];
+    }>(`/social-media/person/${encodeURIComponent(personId)}`, {
+        ...opts
+    }));
+}
+export function getSocialMediaById({ id }: {
+    id: string;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: SocialMediaResponseDto;
+    }>(`/social-media/${encodeURIComponent(id)}`, {
+        ...opts
+    }));
+}
+export function updateSocialMedia({ id, updateSocialMediaDto }: {
+    id: string;
+    updateSocialMediaDto: UpdateSocialMediaDto;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: SocialMediaResponseDto;
+    }>(`/social-media/${encodeURIComponent(id)}`, oazapfts.json({
+        ...opts,
+        method: "PUT",
+        body: updateSocialMediaDto
+    })));
+}
 export function deleteStacks({ bulkIdsDto }: {
     bulkIdsDto: BulkIdsDto;
 }, opts?: Oazapfts.RequestOpts) {
@@ -3866,6 +4155,39 @@ export enum SourceType {
     Exif = "exif",
     Manual = "manual"
 }
+export enum Type {
+    Parent = "parent",
+    Child = "child",
+    Sibling = "sibling",
+    Spouse = "spouse",
+    Grandparent = "grandparent",
+    Grandchild = "grandchild",
+    Uncle = "uncle",
+    Aunt = "aunt",
+    Nephew = "nephew",
+    Niece = "niece",
+    Cousin = "cousin",
+    ParentInLaw = "parent_in_law",
+    ChildInLaw = "child_in_law",
+    SiblingInLaw = "sibling_in_law",
+    Friend = "friend",
+    BestFriend = "best_friend",
+    Acquaintance = "acquaintance",
+    FriendOfFriend = "friend_of_friend",
+    Colleague = "colleague",
+    Supervisor = "supervisor",
+    Subordinate = "subordinate",
+    BusinessPartner = "business_partner",
+    Coauthor = "coauthor",
+    Classmate = "classmate",
+    Teacher = "teacher",
+    Student = "student",
+    Teammate = "teammate",
+    Neighbor = "neighbor",
+    Roommate = "roommate",
+    Mentor = "mentor",
+    Mentee = "mentee"
+}
 export enum AssetTypeEnum {
     Image = "IMAGE",
     Video = "VIDEO",
@@ -3962,7 +4284,10 @@ export enum Permission {
     AdminUserCreate = "admin.user.create",
     AdminUserRead = "admin.user.read",
     AdminUserUpdate = "admin.user.update",
-    AdminUserDelete = "admin.user.delete"
+    AdminUserDelete = "admin.user.delete",
+    UrlCreate = "url.create",
+    UrlRead = "url.read",
+    UrlUpdate = "url.update"
 }
 export enum AssetMediaStatus {
     Created = "created",
@@ -4011,14 +4336,20 @@ export enum JobName {
     Sidecar = "sidecar",
     Library = "library",
     Notifications = "notifications",
-    BackupDatabase = "backupDatabase"
+    BackupDatabase = "backupDatabase",
+    PersonDataScrapping = "personDataScrapping",
+    SocialMediaDataScrapping = "socialMediaDataScrapping",
+    SocialMediaDataScrappingWeb = "socialMediaDataScrappingWeb",
+    LocationDataScrappingWeb = "locationDataScrappingWeb",
+    PersonSidecar = "personSidecar"
 }
 export enum JobCommand {
     Start = "start",
     Pause = "pause",
     Resume = "resume",
     Empty = "empty",
-    ClearFailed = "clear-failed"
+    ClearFailed = "clear-failed",
+    Stop = "stop"
 }
 export enum MemoryType {
     OnThisDay = "on_this_day"

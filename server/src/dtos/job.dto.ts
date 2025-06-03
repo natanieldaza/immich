@@ -99,4 +99,20 @@ export class AllJobStatusResponseDto implements Record<QueueName, JobStatusDto> 
 
   @ApiProperty({ type: JobStatusDto })
   [QueueName.BACKUP_DATABASE]!: JobStatusDto;
+
+   @ApiProperty({ type: JobStatusDto })
+  [QueueName.PERSON_DATA_SCRAPPING]!: JobStatusDto;
+
+  @ApiProperty({ type: JobStatusDto })
+  [QueueName.SOCIAL_MEDIA_DATA_SCRAPPING]!: JobStatusDto;
+
+  @ApiProperty({ type: JobStatusDto })
+  [QueueName.SOCIAL_MEDIA_DATA_SCRAPPING_WEB]!: JobStatusDto;
+
+  @ApiProperty({ type: JobStatusDto })
+  [QueueName.LOCATION_DATA_SCRAPPING_WEB]!: JobStatusDto;
+
+  @ApiProperty({ type: JobStatusDto })
+  [QueueName.PERSON_SIDECAR]!: JobStatusDto;
+  
 }

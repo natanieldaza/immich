@@ -9,7 +9,7 @@ import {
   PersonWithFacesResponseDto,
   SideCarPersonDto,
   mapFacesWithoutPerson,
-  mapPerson
+  mapPerson,
 } from 'src/dtos/person.dto';
 import { TagResponseDto, mapTag } from 'src/dtos/tag.dto';
 import { UserResponseDto, mapUser } from 'src/dtos/user.dto';
@@ -23,13 +23,6 @@ export class SanitizedAssetResponseDto {
   type!: AssetType;
   thumbhash!: string | null;
   originalMimeType?: string;
-  @ApiProperty({
-    type: 'string',
-    format: 'date-time',
-    description:
-      'The local date and time when the photo/video was taken, derived from EXIF metadata. This represents the photographer\'s local time regardless of timezone, stored as a timezone-agnostic timestamp. Used for timeline grouping by "local" days and months.',
-    example: '2024-01-15T14:30:00.000Z',
-  })
   localDateTime!: Date;
   duration!: string;
   livePhotoVideoId?: string | null;
@@ -45,29 +38,8 @@ export class AssetResponseDto extends SanitizedAssetResponseDto {
   libraryId?: string | null;
   originalPath!: string;
   originalFileName!: string;
-  @ApiProperty({
-    type: 'string',
-    format: 'date-time',
-    description:
-      'The actual UTC timestamp when the file was created/captured, preserving timezone information. This is the authoritative timestamp for chronological sorting within timeline groups. Combined with timezone data, this can be used to determine the exact moment the photo was taken.',
-    example: '2024-01-15T19:30:00.000Z',
-  })
   fileCreatedAt!: Date;
-  @ApiProperty({
-    type: 'string',
-    format: 'date-time',
-    description:
-      'The UTC timestamp when the file was last modified on the filesystem. This reflects the last time the physical file was changed, which may be different from when the photo was originally taken.',
-    example: '2024-01-16T10:15:00.000Z',
-  })
   fileModifiedAt!: Date;
-  @ApiProperty({
-    type: 'string',
-    format: 'date-time',
-    description:
-      'The UTC timestamp when the asset record was last updated in the database. This is automatically maintained by the database and reflects when any field in the asset was last modified.',
-    example: '2024-01-16T12:45:30.000Z',
-  })
   updatedAt!: Date;
   isFavorite!: boolean;
   isArchived!: boolean;
