@@ -220,6 +220,8 @@ class ApiClient {
           return AllJobStatusResponseDto.fromJson(value);
         case 'AssetBulkDeleteDto':
           return AssetBulkDeleteDto.fromJson(value);
+        case 'AssetBulkMoveDto':
+          return AssetBulkMoveDto.fromJson(value);
         case 'AssetBulkUpdateDto':
           return AssetBulkUpdateDto.fromJson(value);
         case 'AssetBulkUploadCheckDto':
@@ -306,6 +308,8 @@ class ApiClient {
           return CreateLibraryDto.fromJson(value);
         case 'CreateProfileImageResponseDto':
           return CreateProfileImageResponseDto.fromJson(value);
+        case 'CreateSocialMediaDto':
+          return CreateSocialMediaDto.fromJson(value);
         case 'DatabaseBackupConfig':
           return DatabaseBackupConfig.fromJson(value);
         case 'DownloadArchiveInfo':
@@ -438,6 +442,8 @@ class ApiClient {
           return PermissionTypeTransformer().decode(value);
         case 'PersonCreateDto':
           return PersonCreateDto.fromJson(value);
+        case 'PersonRelationshipDto':
+          return PersonRelationshipDto.fromJson(value);
         case 'PersonResponseDto':
           return PersonResponseDto.fromJson(value);
         case 'PersonStatisticsResponseDto':
@@ -470,6 +476,8 @@ class ApiClient {
           return ReactionLevelTypeTransformer().decode(value);
         case 'ReactionType':
           return ReactionTypeTypeTransformer().decode(value);
+        case 'RelatedPersonDto':
+          return RelatedPersonDto.fromJson(value);
         case 'ReverseGeocodingStateResponseDto':
           return ReverseGeocodingStateResponseDto.fromJson(value);
         case 'SearchAlbumResponseDto':
@@ -532,10 +540,20 @@ class ApiClient {
           return SharedLinksResponse.fromJson(value);
         case 'SharedLinksUpdate':
           return SharedLinksUpdate.fromJson(value);
+        case 'SideCarPersonDto':
+          return SideCarPersonDto.fromJson(value);
         case 'SignUpDto':
           return SignUpDto.fromJson(value);
+        case 'SitesUrlCreateDto':
+          return SitesUrlCreateDto.fromJson(value);
+        case 'SitesUrlResponseDto':
+          return SitesUrlResponseDto.fromJson(value);
+        case 'SitesUrlUpdateDto':
+          return SitesUrlUpdateDto.fromJson(value);
         case 'SmartSearchDto':
           return SmartSearchDto.fromJson(value);
+        case 'SocialMediaResponseDto':
+          return SocialMediaResponseDto.fromJson(value);
         case 'SourceType':
           return SourceTypeTypeTransformer().decode(value);
         case 'StackCreateDto':
@@ -684,6 +702,8 @@ class ApiClient {
           return UpdateLibraryDto.fromJson(value);
         case 'UpdatePartnerDto':
           return UpdatePartnerDto.fromJson(value);
+        case 'UpdateSocialMediaDto':
+          return UpdateSocialMediaDto.fromJson(value);
         case 'UsageByUserDto':
           return UsageByUserDto.fromJson(value);
         case 'UserAdminCreateDto':

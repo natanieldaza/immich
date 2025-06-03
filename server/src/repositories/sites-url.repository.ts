@@ -15,7 +15,7 @@ export class SitesUrlRepository {
   ) { }
 
   async insert(auth: AuthDto,data: Partial<SitesUrlCreateDto>): Promise<SitesUrlResponseDto> {
-    this.logger.log('Inserting new site URL', data);
+    this.logger.log(`Inserting new site URL ${JSON.stringify(data)}`);
     try {
       const [result] = await this.db
         .insertInto('sites_url')
@@ -26,6 +26,7 @@ export class SitesUrlRepository {
           visitedAt: data.visitedAt ?? null,
           createdAt: data.createdAt ?? new Date().toISOString(),
           ownerId: String(auth.user.id), // Ensure this is provided
+          posts: data.posts ?? 0, // Default to 0 if not provided
         }).onConflict((oc) => oc.columns(['url']) // Specify the unique constraint column
           .doUpdateSet({ preference: sql`GREATEST(sites_url.preference, EXCLUDED.preference)` })) // Update preference if the new one is greater
         .returningAll()
@@ -42,6 +43,9 @@ export class SitesUrlRepository {
         visitedAt: result.visitedAt ? new Date(result.visitedAt) : null,
         preference: result.preference ?? null,
         description: result.description ?? null,
+        posts: result.posts ?? 0,
+        runAt: result.runAt ? new Date(result.runAt) : null,
+        failed: result.failed ?? null, // Ensure this is included
       };
   
       return response;
@@ -75,6 +79,85 @@ export class SitesUrlRepository {
 
     return result ?? [];
   }
+
+async setVisited(id: string, visitedAt: Date): Promise<SitesUrlResponseDto | null> {
+    const [result] = await this.db
+      .updateTable('sites_url')
+      .set({
+        visitedAt: visitedAt.toISOString(),
+      })
+      .where('id', '=', id)
+      .returningAll()
+      .execute();
+    return result ? {
+      id: result.id ? String(result.id) : '',
+      url: result.url,
+      createdAt: result.createdAt ? new Date(String(result.createdAt)) : null,  
+      visitedAt: result.visitedAt ? new Date(String(result.visitedAt)) : null,
+      preference: result.preference,
+      description: result.description,
+      posts: result.posts ?? 0,
+      runAt: result.runAt ? new Date(result.runAt) : null,
+      failed: result.failed ?? null,
+    } : null;
+  }
+
+  
+  async getAllSortedByPreference(): Promise<SitesUrlResponseDto[]> {
+    const result = await this.db
+      .selectFrom('sites_url')
+      .selectAll()
+      .where(() => sql`failed IS NULL OR failed = TRUE`)
+      .orderBy('preference', 'desc')
+      .execute();
+  
+    return result.map(siteUrl => ({
+      id: siteUrl.id ? String(siteUrl.id) : '',
+      url: siteUrl.url,
+      createdAt: siteUrl.createdAt ? new Date(String(siteUrl.createdAt)) : null,
+      visitedAt: siteUrl.visitedAt ? new Date(String(siteUrl.visitedAt)) : null,
+      preference: siteUrl.preference,
+      description: siteUrl.description,
+      posts: siteUrl.posts ?? 0,
+    })) ?? [];
+  }
+  
+  
+  async setProcessed(id: string, runAt: Date, failed: boolean): Promise<SitesUrlResponseDto | null> {
+    const [result] = await this.db
+      .updateTable('sites_url')
+      .set({
+        runAt: runAt.toISOString(),
+        failed: failed,
+      })
+      .where('id', '=', id)
+      .returningAll()
+      .execute();
+    return result ? {
+      id: result.id ? String(result.id) : '',
+      url: result.url,  
+      createdAt: result.createdAt ? new Date(String(result.createdAt)) : null,
+      visitedAt: result.visitedAt ? new Date(String(result.visitedAt)) : null,
+      preference: result.preference,
+      description: result.description,
+      posts: result.posts ?? 0,
+      runAt: result.runAt ? new Date(result.runAt) : null,
+      failed: result.failed ?? null,
+    } : null;
+  }
+
+  async getAllByPreferenceSortedByPosts(preference: number): Promise<SitesUrlResponseDto[]> {
+    const result = await this.db
+      .selectFrom('sites_url')
+      .selectAll()
+      .where(() => sql`(case when preference = 0 then preference >= ${preference} else preference = ${preference} end)`)
+      .where(() => sql`failed IS NULL OR failed = TRUE`)
+      .orderBy('posts', 'desc')
+      .execute();
+  
+    return result ?? [];
+  }
+     
 
   async getByOwnerId(ownerId: string): Promise<SitesUrlResponseDto[]> {
     const result = await this.db

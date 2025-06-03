@@ -1,0 +1,136 @@
+diff --git a/node_modules/postgres/cf/src/connection.js b/node_modules/postgres/cf/src/connection.js
+index 203af80..4408a76 100644
+--- a/node_modules/postgres/cf/src/connection.js
++++ b/node_modules/postgres/cf/src/connection.js
+@@ -1,17 +1,13 @@
+ import { Buffer } from 'node:buffer'
+-import { setImmediate, clearImmediate } from '../polyfills.js'
+-import { net } from '../polyfills.js'
+-import { tls } from '../polyfills.js'
+-import { crypto } from '../polyfills.js'
+ import Stream from 'node:stream'
+-import { performance } from '../polyfills.js'
++import { clearImmediate, crypto, net, performance, setImmediate, tls } from '../polyfills.js'
+ 
+-import { stringify, handleValue, arrayParser, arraySerializer } from './types.js'
++import b from './bytes.js'
+ import { Errors } from './errors.js'
+-import Result from './result.js'
++import { CLOSE, Query } from './query.js'
+ import Queue from './queue.js'
+-import { Query, CLOSE } from './query.js'
+-import b from './bytes.js'
++import Result from './result.js'
++import { arrayParser, arraySerializer, handleValue, stringify } from './types.js'
+ 
+ export default Connection
+ 
+@@ -387,6 +383,10 @@ function Connection(options, queues = {}, { onopen = noop, onend = noop, onclose
+   }
+ 
+   function queryError(query, err) {
++    if (!query || typeof query !== 'object' || !query.reject) {
++      throw err
++    }
++  
+     if (query.reserve)
+       return query.reject(err)
+   
+@@ -394,12 +394,13 @@ function Connection(options, queues = {}, { onopen = noop, onend = noop, onclose
+       err = new Error(err)
+   
+     'query' in err || 'parameters' in err || Object.defineProperties(err, {
+-      stack: { value: err.stack + query.origin.replace(/.*\n/, '\n'), enumerable: options.debug },
++      stack: { value: err.stack + ((query.origin || '').replace(/.*\n/, '\n')), enumerable: options.debug },
+       query: { value: query.string, enumerable: options.debug },
+       parameters: { value: query.parameters, enumerable: options.debug },
+       args: { value: query.args, enumerable: options.debug },
+       types: { value: query.statement && query.statement.types, enumerable: options.debug }
+     })
++  
+     query.reject(err)
+   }
+ 
+diff --git a/node_modules/postgres/cjs/src/connection.js b/node_modules/postgres/cjs/src/connection.js
+index 589d363..dc816a8 100644
+--- a/node_modules/postgres/cjs/src/connection.js
++++ b/node_modules/postgres/cjs/src/connection.js
+@@ -385,6 +385,10 @@ function Connection(options, queues = {}, { onopen = noop, onend = noop, onclose
+   }
+ 
+   function queryError(query, err) {
++    if (!query || typeof query !== 'object' || !query.reject) {
++      throw err
++    }
++  
+     if (query.reserve)
+       return query.reject(err)
+   
+@@ -392,12 +396,13 @@ function Connection(options, queues = {}, { onopen = noop, onend = noop, onclose
+       err = new Error(err)
+   
+     'query' in err || 'parameters' in err || Object.defineProperties(err, {
+-      stack: { value: err.stack + query.origin.replace(/.*\n/, '\n'), enumerable: options.debug },
++      stack: { value: err.stack + ((query.origin || '').replace(/.*\n/, '\n')), enumerable: options.debug },
+       query: { value: query.string, enumerable: options.debug },
+       parameters: { value: query.parameters, enumerable: options.debug },
+       args: { value: query.args, enumerable: options.debug },
+       types: { value: query.statement && query.statement.types, enumerable: options.debug }
+     })
++  
+     query.reject(err)
+   }
+   
+diff --git a/node_modules/postgres/src/connection.js b/node_modules/postgres/src/connection.js
+index c3f554a..e311312 100644
+--- a/node_modules/postgres/src/connection.js
++++ b/node_modules/postgres/src/connection.js
+@@ -1,15 +1,15 @@
+-import net from 'net'
+-import tls from 'tls'
+ import crypto from 'crypto'
+-import Stream from 'stream'
++import net from 'net'
+ import { performance } from 'perf_hooks'
++import Stream from 'stream'
++import tls from 'tls'
+ 
+-import { stringify, handleValue, arrayParser, arraySerializer } from './types.js'
++import b from './bytes.js'
+ import { Errors } from './errors.js'
+-import Result from './result.js'
++import { CLOSE, Query } from './query.js'
+ import Queue from './queue.js'
+-import { Query, CLOSE } from './query.js'
+-import b from './bytes.js'
++import Result from './result.js'
++import { arrayParser, arraySerializer, handleValue, stringify } from './types.js'
+ 
+ export default Connection
+ 
+@@ -385,6 +385,10 @@ function Connection(options, queues = {}, { onopen = noop, onend = noop, onclose
+   }
+ 
+   function queryError(query, err) {
++    if (!query || typeof query !== 'object' || !query.reject) {
++      throw err
++    }
++  
+     if (query.reserve)
+       return query.reject(err)
+   
+@@ -392,12 +396,13 @@ function Connection(options, queues = {}, { onopen = noop, onend = noop, onclose
+       err = new Error(err)
+   
+     'query' in err || 'parameters' in err || Object.defineProperties(err, {
+-      stack: { value: err.stack + query.origin.replace(/.*\n/, '\n'), enumerable: options.debug },
++      stack: { value: err.stack + ((query.origin || '').replace(/.*\n/, '\n')), enumerable: options.debug },
+       query: { value: query.string, enumerable: options.debug },
+       parameters: { value: query.parameters, enumerable: options.debug },
+       args: { value: query.args, enumerable: options.debug },
+       types: { value: query.statement && query.statement.types, enumerable: options.debug }
+     })
++  
+     query.reject(err)
+   }
+ 

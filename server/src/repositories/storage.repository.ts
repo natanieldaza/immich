@@ -40,6 +40,11 @@ export class StorageRepository {
   constructor(private logger: LoggingRepository) {
     this.logger.setContext(StorageRepository.name);
   }
+  exists(filepath: string): Promise<boolean> {
+    return fs.access(filepath, constants.F_OK)
+      .then(() => true)
+      .catch(() => false);
+  }
 
   realpath(filepath: string) {
     return fs.realpath(filepath);
@@ -51,6 +56,29 @@ export class StorageRepository {
 
   copyFile(source: string, target: string) {
     return fs.copyFile(source, target);
+  }
+  async moveFileSafely(source: string, target: string): Promise<void> {
+    try {
+      // Copy the file
+      await fs.copyFile(source, target);
+      //await fs.copyFile(source, target);
+
+      // Verify that the target file now exists
+      await fs.access(target);
+
+      // Remove the original file
+      this.logger.debug(`Removing original file: ${source}`);
+      await fs.unlink(source);
+    } catch (error: any) {
+      // Clean up in case partial move happened
+      try {
+        await fs.unlink(target); // remove partially copied target
+      } catch (_) {
+        // ignore if it doesn’t exist
+      }
+
+      throw new Error(`Failed to move file from "${source}" to "${target}": ${error.message}`);
+    }
   }
 
   stat(filepath: string) {
@@ -177,7 +205,7 @@ export class StorageRepository {
       return Promise.resolve([]);
     }
 
-    const globbedPaths = pathsToCrawl.map((path) => this.asGlob(path));
+    const globbedPaths = pathsToCrawl.map((path) => this.asGlob(path, 'files'));
 
     return glob(globbedPaths, {
       absolute: true,
@@ -189,26 +217,29 @@ export class StorageRepository {
   }
 
   async *walk(walkOptions: WalkOptionsDto): AsyncGenerator<string[]> {
-    const { pathsToCrawl, exclusionPatterns, includeHidden } = walkOptions;
+    const { pathsToCrawl, exclusionPatterns, includeHidden, typeFilter, take = 100, deepth = Infinity } = walkOptions;
     if (pathsToCrawl.length === 0) {
-      async function* emptyGenerator() {}
+      async function* emptyGenerator() { }
       return emptyGenerator();
     }
 
-    const globbedPaths = pathsToCrawl.map((path) => this.asGlob(path));
+    const globbedPaths = pathsToCrawl.map((path) => this.asGlob(path, typeFilter));
 
     const stream = globStream(globbedPaths, {
       absolute: true,
       caseSensitiveMatch: false,
-      onlyFiles: true,
       dot: includeHidden,
       ignore: exclusionPatterns,
+      onlyFiles: typeFilter === 'files',
+      onlyDirectories: typeFilter === 'directories',
+      deep: deepth,
     });
 
     let batch: string[] = [];
-    for await (const value of stream) {
-      batch.push(value.toString());
-      if (batch.length === walkOptions.take) {
+    for await (const entry of stream) {
+      batch.push(entry.toString());
+
+      if (batch.length >= take) {
         yield batch;
         batch = [];
       }
@@ -231,9 +262,23 @@ export class StorageRepository {
     return () => watcher.close();
   }
 
-  private asGlob(pathToCrawl: string): string {
-    const escapedPath = escapePath(pathToCrawl).replaceAll('"', '["]').replaceAll("'", "[']").replaceAll('`', '[`]');
-    const extensions = `*{${mimeTypes.getSupportedFileExtensions().join(',')}}`;
-    return `${escapedPath}/**/${extensions}`;
+  private asGlob(pathToCrawl: string, typeFilter: 'directories' | 'files' | 'all'): string {
+    const escapedPath = escapePath(pathToCrawl)
+      .replaceAll('"', '["]')
+      .replaceAll("'", "[']")
+      .replaceAll('`', '[`]');
+
+    switch (typeFilter) {
+      case 'directories':
+        // Match all directories recursively
+        return `${escapedPath}/**/`;
+      case 'files':
+        // Match files with supported extensions
+        const extensions = `*{${mimeTypes.getSupportedFileExtensions().join(',')}}`;
+        return `${escapedPath}/**/${extensions}`;
+      case 'all':
+        // Match everything (files and folders)
+        return `${escapedPath}/**/*`;
+    }
   }
 }

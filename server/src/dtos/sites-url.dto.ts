@@ -29,6 +29,11 @@ import { IsDate, IsNumber, IsOptional, IsString } from 'class-validator';
    @IsDate()
    @IsOptional()
    visitedAt?: Date | null;
+
+   @ApiProperty({ required: false, default: 0 })
+   @IsNumber()
+   @IsOptional()
+   posts!: number;
  }
  
  
@@ -61,6 +66,22 @@ import { IsDate, IsNumber, IsOptional, IsString } from 'class-validator';
    @IsString()
    @IsOptional()
    description!: string | null;
+
+    @ApiProperty({ required: false, default: 0 })
+    @IsNumber()
+    @IsOptional()
+    posts!: number;
+
+    @ApiProperty({ type: Date, required: false })
+    @Type(() => Date)
+    @IsDate()
+    @IsOptional()
+    runAt?: Date | null;
+
+    @ApiProperty({ required: false, default: false })
+    @IsOptional()
+    failed?: boolean | null;  
+    
  }
  
  export class SitesUrlUpdateDto {
@@ -85,4 +106,19 @@ import { IsDate, IsNumber, IsOptional, IsString } from 'class-validator';
    @IsDate()
    @IsOptional()
    visitedAt?: Date | null;
+
+    @ApiProperty({ required: false, default: 0 })
+    @IsNumber()
+    @IsOptional()
+    posts!: number;
+    
+    @ApiProperty({ type: Date, required: false })
+    @Type(() => Date)
+    @IsDate()
+    @IsOptional()
+    runAt?: Date | null;
+
+    @ApiProperty({ required: false, default: false })
+    @IsOptional()
+    failed?: boolean | null;  
  }

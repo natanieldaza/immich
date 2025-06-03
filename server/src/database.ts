@@ -1,5 +1,5 @@
 import { Selectable } from 'kysely';
-import { Albums, Exif as DatabaseExif } from 'src/db';
+import { Albums, Exif as DatabaseExif, DirectoryStatusEnum } from 'src/db';
 import { MapAsset } from 'src/dtos/asset-response.dto';
 import {
   AlbumUserRole,
@@ -8,6 +8,7 @@ import {
   AssetVisibility,
   MemoryType,
   Permission,
+  RelationshipType,
   SharedLinkType,
   SourceType,
   UserAvatarColor,
@@ -118,6 +119,7 @@ export type Asset = {
   ownerId: string;
   sidecarPath: string | null;
   type: AssetType;
+  directoryId?: string|null;
 };
 
 export type User = {
@@ -253,7 +255,45 @@ export type Person = {
   faceAssetId: string | null;
   isHidden: boolean;
   thumbnailPath: string;
+  description: string | null;
+  country: string | null;
+  city: string | null;
+  height: number | null;
+  age: number | null;
 };
+
+export type PersonRelationship ={
+id?: string;
+personId: string;       // Foreign key referencing `person`
+relatedPersonId: string; // Foreign key referencing `related_person`
+type: RelationshipType;       // e.g., 'friend', 'family', etc.
+relatedPerson?: Person; // The related person object
+};
+
+/*HERE*/
+export type SocialMedia = {
+  id?: string;
+  platform: string;  // e.g., 'Facebook', 'Instagram', 'Twitter'
+  platformUserId: string | null;  // e.g., Instagram username, Twitter handle, etc.
+  platformUserIdHash: string | null;  // Ensure uniqueness
+  name: string | null;
+  description: string | null;
+  
+  url: string;
+  followers: number;
+  following: number;
+  posts: number;
+  
+  updatedAt: Date| null;
+  
+  lastDownloaded: Date| null | undefined;
+  
+  lastDownloadedNode: string| null;
+  thumbnailPath: string| null;
+  personId: string| null;  // Person ID to associate with the social media account
+};
+
+
 
 export type AssetFace = {
   id: string;
@@ -269,6 +309,20 @@ export type AssetFace = {
   sourceType: SourceType;
   person?: Person | null;
 };
+
+export type Directory  ={
+  id: string;
+  ownerId: string;
+  libraryId: string | null;
+  status: DirectoryStatusEnum;
+  path: string;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt: Date | null;
+  isExternal: boolean;
+  isOffline: boolean;
+  isHidden: boolean;
+}
 
 const userColumns = ['id', 'name', 'email', 'avatarColor', 'profileImagePath', 'profileChangedAt'] as const;
 const userWithPrefixColumns = [
@@ -298,6 +352,7 @@ export const columns = {
     'assets.ownerId',
     'assets.sidecarPath',
     'assets.type',
+    'assets.directoryId',
   ],
   assetFiles: ['asset_files.id', 'asset_files.path', 'asset_files.type'],
   authUser: [

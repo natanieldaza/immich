@@ -9,10 +9,10 @@ import { SocialMediaService } from 'src/services/social-media.service';
 
 import { CreateSocialMediaDto, SocialMediaResponseDto, UpdateSocialMediaDto } from 'src/dtos/social-media.dto';
 
-import { SocialMediaEntity } from 'src/entities/social-media.entity';
 
 
-@ApiTags('Social-Media')
+
+@ApiTags('Social Media')
 @Controller('social-media')
 export class SocialMediaController {
   constructor(
@@ -23,10 +23,10 @@ export class SocialMediaController {
   
   @Post()
   @Authenticated({ permission: Permission.PERSON_CREATE })
-  async createSocialMedia(
+  createSocialMedia(
     @Auth() auth: AuthDto,
     @Body() createSocialMediaDto: CreateSocialMediaDto,
-  ): Promise<SocialMediaEntity> {
+  ): Promise<SocialMediaResponseDto> {
     return this.service.create(auth, createSocialMediaDto);
   }
 
@@ -37,7 +37,7 @@ export class SocialMediaController {
     @Auth() auth: AuthDto,
     @Param('id') id: string,
     @Body() updateSocialMediaDto: UpdateSocialMediaDto,
-  ): Promise<SocialMediaEntity> {
+  ): Promise<SocialMediaResponseDto> {
     // Ensure the ID in the DTO matches the URL parameter
     if (id !== updateSocialMediaDto.id) {
       throw new NotFoundException('Social media account not found');

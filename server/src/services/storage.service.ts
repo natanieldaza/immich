@@ -82,6 +82,32 @@ export class StorageService extends BaseService {
     return JobStatus.SUCCESS;
   }
 
+  @OnJob({ name: JobName.MOVE_FILES, queue: QueueName.BACKGROUND_TASK })
+  async handleMoveFiles(job: JobOf<JobName.MOVE_FILES>): Promise<JobStatus> {
+    const files: [string, string][] = job.files;
+
+    for (const [base, destination] of files) {
+      if (!base || !destination) {
+        this.logger.warn(`Invalid file move pair: base=${base}, destination=${destination}`);
+        continue;
+      }
+
+      const exists = await this.storageRepository.exists(base);
+      if (!exists) {
+        this.logger.warn(`Source file does not exist: ${base}`);
+        continue;
+      }
+
+      try {
+        await this.storageRepository.moveFileSafely(base, destination);
+      } catch (error: any) {
+        this.logger.warn(`Unable to move file from ${base} to ${destination}`, error);
+      }
+    }
+
+    return JobStatus.SUCCESS;
+  }
+
   private async verifyReadAccess(folder: StorageFolder) {
     const { internalPath, externalPath } = this.getMountFilePaths(folder);
     try {

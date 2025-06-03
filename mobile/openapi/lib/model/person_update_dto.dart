@@ -13,18 +13,32 @@ part of openapi.api;
 class PersonUpdateDto {
   /// Returns a new [PersonUpdateDto] instance.
   PersonUpdateDto({
+    this.age,
     this.birthDate,
+    this.city,
     this.color,
+    this.country,
+    this.description,
     this.featureFaceAssetId,
+    this.height,
     this.isFavorite,
     this.isHidden,
     this.name,
   });
 
+  int? age;
+
   /// Person date of birth. Note: the mobile app cannot currently set the birth date to null.
   DateTime? birthDate;
 
+  String? city;
+
   String? color;
+
+  String? country;
+
+  /// Person description
+  String? description;
 
   /// Asset is used to get the feature face thumbnail.
   ///
@@ -34,6 +48,8 @@ class PersonUpdateDto {
   /// Consider adding a "default:" property in the specification file to hide this note.
   ///
   String? featureFaceAssetId;
+
+  num? height;
 
   ///
   /// Please note: This property should have been non-nullable! Since the specification file
@@ -63,9 +79,14 @@ class PersonUpdateDto {
 
   @override
   bool operator ==(Object other) => identical(this, other) || other is PersonUpdateDto &&
+    other.age == age &&
     other.birthDate == birthDate &&
+    other.city == city &&
     other.color == color &&
+    other.country == country &&
+    other.description == description &&
     other.featureFaceAssetId == featureFaceAssetId &&
+    other.height == height &&
     other.isFavorite == isFavorite &&
     other.isHidden == isHidden &&
     other.name == name;
@@ -73,32 +94,62 @@ class PersonUpdateDto {
   @override
   int get hashCode =>
     // ignore: unnecessary_parenthesis
+    (age == null ? 0 : age!.hashCode) +
     (birthDate == null ? 0 : birthDate!.hashCode) +
+    (city == null ? 0 : city!.hashCode) +
     (color == null ? 0 : color!.hashCode) +
+    (country == null ? 0 : country!.hashCode) +
+    (description == null ? 0 : description!.hashCode) +
     (featureFaceAssetId == null ? 0 : featureFaceAssetId!.hashCode) +
+    (height == null ? 0 : height!.hashCode) +
     (isFavorite == null ? 0 : isFavorite!.hashCode) +
     (isHidden == null ? 0 : isHidden!.hashCode) +
     (name == null ? 0 : name!.hashCode);
 
   @override
-  String toString() => 'PersonUpdateDto[birthDate=$birthDate, color=$color, featureFaceAssetId=$featureFaceAssetId, isFavorite=$isFavorite, isHidden=$isHidden, name=$name]';
+  String toString() => 'PersonUpdateDto[age=$age, birthDate=$birthDate, city=$city, color=$color, country=$country, description=$description, featureFaceAssetId=$featureFaceAssetId, height=$height, isFavorite=$isFavorite, isHidden=$isHidden, name=$name]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
+    if (this.age != null) {
+      json[r'age'] = this.age;
+    } else {
+    //  json[r'age'] = null;
+    }
     if (this.birthDate != null) {
       json[r'birthDate'] = _dateFormatter.format(this.birthDate!.toUtc());
     } else {
     //  json[r'birthDate'] = null;
+    }
+    if (this.city != null) {
+      json[r'city'] = this.city;
+    } else {
+    //  json[r'city'] = null;
     }
     if (this.color != null) {
       json[r'color'] = this.color;
     } else {
     //  json[r'color'] = null;
     }
+    if (this.country != null) {
+      json[r'country'] = this.country;
+    } else {
+    //  json[r'country'] = null;
+    }
+    if (this.description != null) {
+      json[r'description'] = this.description;
+    } else {
+    //  json[r'description'] = null;
+    }
     if (this.featureFaceAssetId != null) {
       json[r'featureFaceAssetId'] = this.featureFaceAssetId;
     } else {
     //  json[r'featureFaceAssetId'] = null;
+    }
+    if (this.height != null) {
+      json[r'height'] = this.height;
+    } else {
+    //  json[r'height'] = null;
     }
     if (this.isFavorite != null) {
       json[r'isFavorite'] = this.isFavorite;
@@ -127,9 +178,16 @@ class PersonUpdateDto {
       final json = value.cast<String, dynamic>();
 
       return PersonUpdateDto(
+        age: mapValueOfType<int>(json, r'age'),
         birthDate: mapDateTime(json, r'birthDate', r''),
+        city: mapValueOfType<String>(json, r'city'),
         color: mapValueOfType<String>(json, r'color'),
+        country: mapValueOfType<String>(json, r'country'),
+        description: mapValueOfType<String>(json, r'description'),
         featureFaceAssetId: mapValueOfType<String>(json, r'featureFaceAssetId'),
+        height: json[r'height'] == null
+            ? null
+            : num.parse('${json[r'height']}'),
         isFavorite: mapValueOfType<bool>(json, r'isFavorite'),
         isHidden: mapValueOfType<bool>(json, r'isHidden'),
         name: mapValueOfType<String>(json, r'name'),

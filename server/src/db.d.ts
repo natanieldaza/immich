@@ -15,9 +15,10 @@ import {
   NotificationLevel,
   NotificationType,
   Permission,
+  RelationshipType,
   SharedLinkType,
   SourceType,
-  SyncEntityType,
+  SyncEntityType
 } from 'src/enum';
 import { UserTable } from 'src/schema/tables/user.table';
 import { OnThisDayData, UserMetadataItem } from 'src/types';
@@ -25,6 +26,8 @@ import { OnThisDayData, UserMetadataItem } from 'src/types';
 export type ArrayType<T> = ArrayTypeImpl<T> extends (infer U)[] ? U[] : ArrayTypeImpl<T>;
 
 export type ArrayTypeImpl<T> = T extends ColumnType<infer S, infer I, infer U> ? ColumnType<S[], I[], U[]> : T[];
+
+export type DirectoryStatusEnum = 'added' | 'queued' | 'processing' | 'done' | 'failed' | 'skipped';
 
 export type Generated<T> =
   T extends ColumnType<infer S, infer I, infer U> ? ColumnType<S, I | undefined, U> : ColumnType<T, T | undefined, T>;
@@ -72,6 +75,8 @@ export interface Albums {
   ownerId: string;
   updatedAt: Generated<Timestamp>;
   updateId: Generated<string>;
+  viewed: Generated<boolean>;
+  
 }
 
 export interface AlbumsAudit {
@@ -156,6 +161,7 @@ export interface AssetsAudit {
 export interface Assets {
   checksum: Buffer;
   createdAt: Generated<Timestamp>;
+  directoryId: string | null;
   deletedAt: Timestamp | null;
   deviceAssetId: string;
   deviceId: string;
@@ -182,6 +188,7 @@ export interface Assets {
   type: AssetType;
   updatedAt: Generated<Timestamp>;
   updateId: Generated<string>;
+  viewed: Generated<boolean>;
 }
 
 export interface AssetStack {
@@ -250,6 +257,34 @@ export interface GeodataPlaces {
   longitude: number;
   modificationDate: Timestamp;
   name: string;
+}
+
+export interface webScrappedLocations {
+  id?: string;
+  name: string | null;
+  longitude: number | null;
+  latitude: number | null;
+  countryCode: string | null;
+  platform: string;
+  platformLocationId: string;
+  platformUrl: string | null;
+
+}
+
+export interface PersonSidecar {
+  id?: string;
+  personId: string;
+  sidecarPath: string;
+  lastProcessedAt: Date | null;
+  updatedAt: Date;
+  ownerId: string;
+}
+
+
+
+export interface webScrappedLocationsTmp {
+  assetId: string | null;
+  webScrappedLocationId: string | null;
 }
 
 export interface Libraries {
@@ -344,6 +379,7 @@ export interface Person {
   color: string | null;
   createdAt: Generated<Timestamp>;
   faceAssetId: string | null;
+  age: number | null;
   id: Generated<string>;
   isFavorite: Generated<boolean>;
   isHidden: Generated<boolean>;
@@ -352,7 +388,44 @@ export interface Person {
   thumbnailPath: Generated<string>;
   updatedAt: Generated<Timestamp>;
   updateId: Generated<string>;
+  city: string | null;
+  country: string | null;
+  description: string | null;
+  height: number | null;
+  age: number | null;
 }
+export interface SocialMedia {
+  id?: string;
+  platform: string;  // e.g., 'Facebook', 'Instagram', 'Twitter'
+  platformUserId: string | null;  // e.g., Instagram username, Twitter handle, etc.
+  platformUserIdHash: string | null;  // Ensure uniqueness
+  name: string | null;
+  description: string | null;
+  
+  url: string;
+  followers: number;
+  following: number;
+  posts: number;
+  
+  updatedAt: Date| null;
+  
+  lastDownloaded: Date| null | undefined;
+  
+  lastDownloadedNode: string| null;
+  thumbnailPath: string| null;
+  personId: string| null;  // Person ID to associate with the social media account
+  ownerId: string;  // User ID of the owner
+};
+
+export interface PersonRelationship {
+  id?: Generated<string>;
+  personId: Generated<string>;       // Foreign key referencing `person`
+  relatedPersonId: Generated<string>; // Foreign key referencing `related_person`
+  type: RelationshipType; // Use the existing enum
+  relatedPerson?: Person; // The related person object
+}
+
+
 
 export interface Sessions {
   createdAt: Generated<Timestamp>;
@@ -479,6 +552,37 @@ export interface VersionHistory {
   version: string;
 }
 
+
+export interface SitesUrl {
+
+  id: Generated<string>;
+  url: string;
+  createdAt: Generated<Timestamp>;
+  visitedAt: Timestamp | null;
+  preference: number;
+  description: string | null;
+  ownerId: string;
+  posts: number;
+  runAt: Timestamp | null;
+  failed: boolean | null;
+}
+export interface Directory {
+  id?: Generated<string>;
+  ownerId: string;
+  libraryId: string | null;
+  status: Generated<DirectoryStatusEnum>;
+  path: string;
+  createdAt: Generated<Timestamp>;
+  updatedAt: Generated<Timestamp>;
+  deletedAt: Timestamp | null;
+  isOffline: boolean;
+  isHidden: boolean;
+  albumId: string | null;
+}
+
+
+
+
 export interface DB {
   activity: Activity;
   albums: Albums;
@@ -494,9 +598,12 @@ export interface DB {
   assets: Assets;
   assets_audit: AssetsAudit;
   audit: Audit;
+  directory: Directory;
   exif: Exif;
   face_search: FaceSearch;
   geodata_places: GeodataPlaces;
+  web_scrapped_locations: webScrappedLocations;
+  web_scrapped_locations_tmp: webScrappedLocationsTmp;
   libraries: Libraries;
   memories: Memories;
   memories_assets_assets: MemoriesAssetsAssets;
@@ -507,14 +614,18 @@ export interface DB {
   partners_audit: PartnersAudit;
   partners: Partners;
   person: Person;
+  person_relationship: PersonRelationship;
+  person_sidecar: PersonSidecar;
   sessions: Sessions;
   session_sync_checkpoints: SessionSyncCheckpoints;
+  sites_url: SitesUrl;
   shared_link__asset: SharedLinkAsset;
   shared_links: SharedLinks;
   smart_search: SmartSearch;
   socket_io_attachments: SocketIoAttachments;
   system_config: SystemConfig;
   system_metadata: SystemMetadata;
+  social_media: SocialMedia;
   tag_asset: TagAsset;
   tags: Tags;
   tags_closure: TagsClosure;

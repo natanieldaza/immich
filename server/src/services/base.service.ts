@@ -17,10 +17,12 @@ import { ConfigRepository } from 'src/repositories/config.repository';
 import { CronRepository } from 'src/repositories/cron.repository';
 import { CryptoRepository } from 'src/repositories/crypto.repository';
 import { DatabaseRepository } from 'src/repositories/database.repository';
+import { DirectoryRepository } from 'src/repositories/directory.repository';
 import { DownloadRepository } from 'src/repositories/download.repository';
 import { DuplicateRepository } from 'src/repositories/duplicate.repository';
 import { EmailRepository } from 'src/repositories/email.repository';
 import { EventRepository } from 'src/repositories/event.repository';
+import { GeodataPlacesRepository } from 'src/repositories/geodata-places.repository';
 import { JobRepository } from 'src/repositories/job.repository';
 import { LibraryRepository } from 'src/repositories/library.repository';
 import { LoggingRepository } from 'src/repositories/logging.repository';
@@ -33,14 +35,18 @@ import { MoveRepository } from 'src/repositories/move.repository';
 import { NotificationRepository } from 'src/repositories/notification.repository';
 import { OAuthRepository } from 'src/repositories/oauth.repository';
 import { PartnerRepository } from 'src/repositories/partner.repository';
+import { PersonRelationshipRepository } from 'src/repositories/person-relationship.repository';
 import { PersonRepository } from 'src/repositories/person.repository';
 import { ProcessRepository } from 'src/repositories/process.repository';
 import { SearchRepository } from 'src/repositories/search.repository';
 import { ServerInfoRepository } from 'src/repositories/server-info.repository';
 import { SessionRepository } from 'src/repositories/session.repository';
 import { SharedLinkRepository } from 'src/repositories/shared-link.repository';
+import { SitesUrlRepository } from 'src/repositories/sites-url.repository';
+import { SocialMediaRepository } from 'src/repositories/social-media.repository';
 import { StackRepository } from 'src/repositories/stack.repository';
 import { StorageRepository } from 'src/repositories/storage.repository';
+
 import { SyncRepository } from 'src/repositories/sync.repository';
 import { SystemMetadataRepository } from 'src/repositories/system-metadata.repository';
 import { TagRepository } from 'src/repositories/tag.repository';
@@ -49,6 +55,7 @@ import { TrashRepository } from 'src/repositories/trash.repository';
 import { UserRepository } from 'src/repositories/user.repository';
 import { VersionHistoryRepository } from 'src/repositories/version-history.repository';
 import { ViewRepository } from 'src/repositories/view-repository';
+import { WebDataScrappingRepository } from 'src/repositories/webdata-scrapping.repository';
 import { UserTable } from 'src/schema/tables/user.table';
 import { AccessRequest, checkAccess, requireAccess } from 'src/utils/access';
 import { getConfig, updateConfig } from 'src/utils/config';
@@ -71,12 +78,14 @@ export class BaseService {
     protected cronRepository: CronRepository,
     protected cryptoRepository: CryptoRepository,
     protected databaseRepository: DatabaseRepository,
+    protected directoryRepository: DirectoryRepository,
     protected downloadRepository: DownloadRepository,
     protected duplicateRepository: DuplicateRepository,
     protected emailRepository: EmailRepository,
     protected eventRepository: EventRepository,
     protected jobRepository: JobRepository,
     protected libraryRepository: LibraryRepository,
+    protected geodataPlacesRepository: GeodataPlacesRepository,
     protected machineLearningRepository: MachineLearningRepository,
     protected mapRepository: MapRepository,
     protected mediaRepository: MediaRepository,
@@ -87,11 +96,14 @@ export class BaseService {
     protected oauthRepository: OAuthRepository,
     protected partnerRepository: PartnerRepository,
     protected personRepository: PersonRepository,
+    protected personRelationshipRepository: PersonRelationshipRepository,
     protected processRepository: ProcessRepository,
     protected searchRepository: SearchRepository,
     protected serverInfoRepository: ServerInfoRepository,
     protected sessionRepository: SessionRepository,
     protected sharedLinkRepository: SharedLinkRepository,
+    protected socialMediaRepository: SocialMediaRepository,
+    protected sitesUrlRepository: SitesUrlRepository,
     protected stackRepository: StackRepository,
     protected storageRepository: StorageRepository,
     protected syncRepository: SyncRepository,
@@ -102,6 +114,7 @@ export class BaseService {
     protected userRepository: UserRepository,
     protected versionRepository: VersionHistoryRepository,
     protected viewRepository: ViewRepository,
+    protected webDataScrappingRepository: WebDataScrappingRepository
   ) {
     this.logger.setContext(this.constructor.name);
     this.storageCore = StorageCore.create(
@@ -110,7 +123,7 @@ export class BaseService {
       cryptoRepository,
       moveRepository,
       personRepository,
-      storageRepository,
+            storageRepository,
       systemMetadataRepository,
       this.logger,
     );

@@ -16,12 +16,17 @@ class SystemConfigJobDto {
     required this.backgroundTask,
     required this.faceDetection,
     required this.library_,
+    required this.locationDataScrappingWeb,
     required this.metadataExtraction,
     required this.migration,
     required this.notifications,
+    required this.personDataScrapping,
+    required this.personSidecar,
     required this.search,
     required this.sidecar,
     required this.smartSearch,
+    required this.socialMediaDataScrapping,
+    required this.socialMediaDataScrappingWeb,
     required this.thumbnailGeneration,
     required this.videoConversion,
   });
@@ -32,17 +37,27 @@ class SystemConfigJobDto {
 
   JobSettingsDto library_;
 
+  JobSettingsDto locationDataScrappingWeb;
+
   JobSettingsDto metadataExtraction;
 
   JobSettingsDto migration;
 
   JobSettingsDto notifications;
 
+  JobSettingsDto personDataScrapping;
+
+  JobSettingsDto personSidecar;
+
   JobSettingsDto search;
 
   JobSettingsDto sidecar;
 
   JobSettingsDto smartSearch;
+
+  JobSettingsDto socialMediaDataScrapping;
+
+  JobSettingsDto socialMediaDataScrappingWeb;
 
   JobSettingsDto thumbnailGeneration;
 
@@ -53,12 +68,17 @@ class SystemConfigJobDto {
     other.backgroundTask == backgroundTask &&
     other.faceDetection == faceDetection &&
     other.library_ == library_ &&
+    other.locationDataScrappingWeb == locationDataScrappingWeb &&
     other.metadataExtraction == metadataExtraction &&
     other.migration == migration &&
     other.notifications == notifications &&
+    other.personDataScrapping == personDataScrapping &&
+    other.personSidecar == personSidecar &&
     other.search == search &&
     other.sidecar == sidecar &&
     other.smartSearch == smartSearch &&
+    other.socialMediaDataScrapping == socialMediaDataScrapping &&
+    other.socialMediaDataScrappingWeb == socialMediaDataScrappingWeb &&
     other.thumbnailGeneration == thumbnailGeneration &&
     other.videoConversion == videoConversion;
 
@@ -68,29 +88,39 @@ class SystemConfigJobDto {
     (backgroundTask.hashCode) +
     (faceDetection.hashCode) +
     (library_.hashCode) +
+    (locationDataScrappingWeb.hashCode) +
     (metadataExtraction.hashCode) +
     (migration.hashCode) +
     (notifications.hashCode) +
+    (personDataScrapping.hashCode) +
+    (personSidecar.hashCode) +
     (search.hashCode) +
     (sidecar.hashCode) +
     (smartSearch.hashCode) +
+    (socialMediaDataScrapping.hashCode) +
+    (socialMediaDataScrappingWeb.hashCode) +
     (thumbnailGeneration.hashCode) +
     (videoConversion.hashCode);
 
   @override
-  String toString() => 'SystemConfigJobDto[backgroundTask=$backgroundTask, faceDetection=$faceDetection, library_=$library_, metadataExtraction=$metadataExtraction, migration=$migration, notifications=$notifications, search=$search, sidecar=$sidecar, smartSearch=$smartSearch, thumbnailGeneration=$thumbnailGeneration, videoConversion=$videoConversion]';
+  String toString() => 'SystemConfigJobDto[backgroundTask=$backgroundTask, faceDetection=$faceDetection, library_=$library_, locationDataScrappingWeb=$locationDataScrappingWeb, metadataExtraction=$metadataExtraction, migration=$migration, notifications=$notifications, personDataScrapping=$personDataScrapping, personSidecar=$personSidecar, search=$search, sidecar=$sidecar, smartSearch=$smartSearch, socialMediaDataScrapping=$socialMediaDataScrapping, socialMediaDataScrappingWeb=$socialMediaDataScrappingWeb, thumbnailGeneration=$thumbnailGeneration, videoConversion=$videoConversion]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
       json[r'backgroundTask'] = this.backgroundTask;
       json[r'faceDetection'] = this.faceDetection;
       json[r'library'] = this.library_;
+      json[r'locationDataScrappingWeb'] = this.locationDataScrappingWeb;
       json[r'metadataExtraction'] = this.metadataExtraction;
       json[r'migration'] = this.migration;
       json[r'notifications'] = this.notifications;
+      json[r'personDataScrapping'] = this.personDataScrapping;
+      json[r'personSidecar'] = this.personSidecar;
       json[r'search'] = this.search;
       json[r'sidecar'] = this.sidecar;
       json[r'smartSearch'] = this.smartSearch;
+      json[r'socialMediaDataScrapping'] = this.socialMediaDataScrapping;
+      json[r'socialMediaDataScrappingWeb'] = this.socialMediaDataScrappingWeb;
       json[r'thumbnailGeneration'] = this.thumbnailGeneration;
       json[r'videoConversion'] = this.videoConversion;
     return json;
@@ -108,12 +138,17 @@ class SystemConfigJobDto {
         backgroundTask: JobSettingsDto.fromJson(json[r'backgroundTask'])!,
         faceDetection: JobSettingsDto.fromJson(json[r'faceDetection'])!,
         library_: JobSettingsDto.fromJson(json[r'library'])!,
+        locationDataScrappingWeb: JobSettingsDto.fromJson(json[r'locationDataScrappingWeb'])!,
         metadataExtraction: JobSettingsDto.fromJson(json[r'metadataExtraction'])!,
         migration: JobSettingsDto.fromJson(json[r'migration'])!,
         notifications: JobSettingsDto.fromJson(json[r'notifications'])!,
+        personDataScrapping: JobSettingsDto.fromJson(json[r'personDataScrapping'])!,
+        personSidecar: JobSettingsDto.fromJson(json[r'personSidecar'])!,
         search: JobSettingsDto.fromJson(json[r'search'])!,
         sidecar: JobSettingsDto.fromJson(json[r'sidecar'])!,
         smartSearch: JobSettingsDto.fromJson(json[r'smartSearch'])!,
+        socialMediaDataScrapping: JobSettingsDto.fromJson(json[r'socialMediaDataScrapping'])!,
+        socialMediaDataScrappingWeb: JobSettingsDto.fromJson(json[r'socialMediaDataScrappingWeb'])!,
         thumbnailGeneration: JobSettingsDto.fromJson(json[r'thumbnailGeneration'])!,
         videoConversion: JobSettingsDto.fromJson(json[r'videoConversion'])!,
       );
@@ -166,12 +201,17 @@ class SystemConfigJobDto {
     'backgroundTask',
     'faceDetection',
     'library',
+    'locationDataScrappingWeb',
     'metadataExtraction',
     'migration',
     'notifications',
+    'personDataScrapping',
+    'personSidecar',
     'search',
     'sidecar',
     'smartSearch',
+    'socialMediaDataScrapping',
+    'socialMediaDataScrappingWeb',
     'thumbnailGeneration',
     'videoConversion',
   };
