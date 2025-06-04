@@ -86,6 +86,9 @@ export class SitesUrlService extends BaseService {
             preference: siteUrl.preference,
             description: siteUrl.description,
             posts: siteUrl.posts ?? 0,
+            runAt: siteUrl.runAt ? new Date(String(siteUrl.runAt)) : null,
+            failed: siteUrl.failed ?? null,
+            lastDownloadedNode: siteUrl.lastDownloadedNode ? String(siteUrl.lastDownloadedNode) : null,
         }));
         
     }
@@ -135,47 +138,61 @@ export class SitesUrlService extends BaseService {
         };
     }
      // Run gallery-dl on a given URL, returns true if success, false otherwise
-  async scrapeWithGalleryDl(url: string): Promise<boolean> {
-    const cmd = ['gallery-dl', url, '--write-metadata', '--write-tags', '--verbose'];
-
-    this.logger.log(`Running gallery-dl command: ${cmd.join(' ')}`);
-
-    return new Promise((resolve) => {
-      const process = spawn(cmd[0], cmd.slice(1), { stdio: ['ignore', 'pipe', 'pipe'] });
-
-      process.stdout.on('data', (data) => {
-        this.logger.log(`[gallery-dl stdout] ${data.toString().trim()}`);
-      });
-
-      process.stderr.on('data', (data) => {
-        this.logger.error(`[gallery-dl stderr] ${data.toString().trim()}`);
-      });
-
-      process.on('close', (code) => {
-        if (code === 0) {
-          this.logger.log(`gallery-dl completed successfully for URL: ${url}`);
-          resolve(true);
-        } else {
-          this.logger.error(`gallery-dl exited with code ${code} for URL: ${url}`);
-          resolve(false);
-        }
-      });
-
-      process.on('error', (err) => {
-        this.logger.error(`Failed to start gallery-dl: ${err.message}`);
-        resolve(false);
-      });
-    });
-  }
-    async runGalleryDlOnUrl(auth: AuthDto, url: string): Promise<void> {
+     async scrapeWithGalleryDl(url: string): Promise<[boolean, string | null]> {
+        const cmd = ['gallery-dl', url, '--write-metadata', '--write-tags', '--verbose'];
+      
+        this.logger.log(`Running gallery-dl command: ${cmd.join(' ')}`);
+      
+        return new Promise((resolve) => {
+          const process = spawn(cmd[0], cmd.slice(1), { stdio: ['ignore', 'pipe', 'pipe'] });
+      
+          let lastDownloadedNode: string | null = null;
+          let hadError = false;
+      
+          process.stdout.on('data', (data) => {
+            this.logger.log(`[gallery-dl stdout] ${data.toString().trim()}`);
+          });
+      
+          process.stderr.on('data', (data) => {
+            const line = data.toString().trim();
+            lastDownloadedNode = line.match(/Last downloaded node: (.+)/)?.[1] || lastDownloadedNode;
+      
+            // Check if it's a known error line
+            if (/Traceback|Error|Exception|Unable to handle request/i.test(line)) {
+              this.logger.error(`[gallery-dl stderr] ${line}`);
+              hadError = true;
+            } else {
+              // Just debug/info output, not a real error
+              this.logger.log(`[gallery-dl stderr] ${line}`);
+            }
+          });
+      
+          process.on('close', (code) => {
+            if (code === 0 && !hadError) {
+              this.logger.log(`gallery-dl completed successfully for URL: ${url}`);
+              resolve([false, lastDownloadedNode]);
+            } else {
+              this.logger.error(`gallery-dl exited with code ${code} for URL: ${url}`);
+              resolve([true, lastDownloadedNode]);
+            }
+          });
+      
+          process.on('error', (err) => {
+            this.logger.error(`Failed to start gallery-dl: ${err.message}`);
+            resolve([true, lastDownloadedNode]);
+          });
+        });
+      }
+      
+    async runGalleryDlOnUrl(auth: AuthDto, url: string): Promise<[boolean, string | null]> {
         try {
             this.logger.log(`Running gallery-dl on URL: ${url}`);
-            const success = await this.scrapeWithGalleryDl(url);
-            this.sitesUrlRepository.setProcessed(url, new Date(), success);
-            if (!success) {
+            const [failed,lastDownloadedNode] = await this.scrapeWithGalleryDl(url);
+            if (failed) {
                 throw new BadRequestException(`gallery-dl failed for URL: ${url}`);
             }
             this.logger.log(`gallery-dl completed successfully for URL: ${url}`);
+            return [false,lastDownloadedNode];
             
         } catch (error) {
             if (error instanceof Error) {
@@ -198,9 +215,9 @@ export class SitesUrlService extends BaseService {
         for (const siteUrl of siteUrls) {
             try {
                 this.logger.log(`Processing URL: ${siteUrl.url}`);
-                const success = await this.scrapeWithGalleryDl(siteUrl.url);
-                await this.sitesUrlRepository.setProcessed(siteUrl.id, new Date(), true);
-                if (!success) {
+                const [failed,lastDownloadedNode] = await this.scrapeWithGalleryDl(siteUrl.url);
+                await this.sitesUrlRepository.setProcessed(siteUrl.id, new Date(), failed,lastDownloadedNode);
+                if (failed) {
                     this.logger.error(`gallery-dl failed for URL: ${siteUrl.url}`);
                     
                     continue; // Skip to the next URL if gallery-dl failed
@@ -209,9 +226,32 @@ export class SitesUrlService extends BaseService {
 
             } catch (error) {
                 this.logger.error(`Error processing URL ${siteUrl.url}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-                await this.sitesUrlRepository.setProcessed(siteUrl.id, new Date(), false);
+                await this.sitesUrlRepository.setProcessed(siteUrl.id, new Date(), true, null);
             }
         }
+    }
+    async dowload(auth: AuthDto, id: string): Promise<SitesUrlResponseDto> {
+        const siteUrl = await this.sitesUrlRepository.getById(id);
+        if (!siteUrl) {
+            throw new BadRequestException('Site URL not found');
+        }
+        const [failed,lastDownloadedNode] = await this.runGalleryDlOnUrl(auth, siteUrl.url);
+        await this.sitesUrlRepository.setProcessed(siteUrl.id, new Date(), failed,lastDownloadedNode);
+        if (failed) {
+            throw new BadRequestException(`Failed to download content from URL: ${siteUrl.url}`);
+        }
+        return {
+            id: siteUrl.id ? String(siteUrl.id) : '',
+            url: siteUrl.url,
+            createdAt: siteUrl.createdAt ? new Date(String(siteUrl.createdAt)) : null,
+            visitedAt: siteUrl.visitedAt ? new Date(String(siteUrl.visitedAt)) : null,
+            preference: siteUrl.preference,
+            description: siteUrl.description,
+            posts: siteUrl.posts ?? 0,
+            runAt: new Date(),
+            failed: false,
+            lastDownloadedNode: lastDownloadedNode ? String(lastDownloadedNode) : null,
+        };
     }
 
 }

@@ -34,6 +34,7 @@ import { IsDate, IsNumber, IsOptional, IsString } from 'class-validator';
    @IsNumber()
    @IsOptional()
    posts!: number;
+   
  }
  
  
@@ -82,6 +83,10 @@ import { IsDate, IsNumber, IsOptional, IsString } from 'class-validator';
     @IsOptional()
     failed?: boolean | null;  
     
+    @ApiProperty({ required: false, nullable: true })
+    @IsString()
+    @IsOptional()
+    lastDownloadedNode?: string | null;
  }
  
  export class SitesUrlUpdateDto {
@@ -89,12 +94,12 @@ import { IsDate, IsNumber, IsOptional, IsString } from 'class-validator';
    @ApiProperty({ required: false, nullable: true })
    @IsString()
    @IsOptional()
-   url!: string;
+   url?: string;
  
    @ApiProperty({ required: false, default: 0 })
    @IsNumber()
    @IsOptional()
-   preference!: number;
+   preference?: number;
  
    @ApiProperty({ required: false, nullable: true })
    @IsString()
@@ -110,7 +115,7 @@ import { IsDate, IsNumber, IsOptional, IsString } from 'class-validator';
     @ApiProperty({ required: false, default: 0 })
     @IsNumber()
     @IsOptional()
-    posts!: number;
+    posts?: number;
     
     @ApiProperty({ type: Date, required: false })
     @Type(() => Date)
@@ -121,4 +126,30 @@ import { IsDate, IsNumber, IsOptional, IsString } from 'class-validator';
     @ApiProperty({ required: false, default: false })
     @IsOptional()
     failed?: boolean | null;  
+
+    @ApiProperty({ required: false, nullable: true })
+    @IsString()
+    @IsOptional()
+    lastDownloadedNode?: string | null;
  }
+
+ export class SitesUrlDownloadDto {
+   @ApiProperty({ required: true })
+   @IsString()
+   url!: string;
+  
+   @ApiProperty({ type: Date, required: false })
+   @Type(() => Date)
+   @IsDate()
+   @IsOptional()
+   runAt?: Date | null;
+
+   @ApiProperty({ required: false, default: false })
+   @IsOptional()
+   failed?: boolean | null;  
+
+   @ApiProperty({ required: false, nullable: true })
+   @IsString()
+   @IsOptional()
+   lastDownloadedNode?: string | null;
+}

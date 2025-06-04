@@ -1271,9 +1271,12 @@ export type AssetIdsResponseDto = {
 export type SitesUrlResponseDto = {
     createdAt: string | null;
     description?: string | null;
+    failed?: boolean | null;
     id: string;
+    lastDownloadedNode?: string | null;
     posts?: number;
     preference?: number;
+    runAt?: string | null;
     url: string;
     visitedAt?: string | null;
 };
@@ -1287,7 +1290,11 @@ export type SitesUrlCreateDto = {
 };
 export type SitesUrlUpdateDto = {
     description?: string | null;
+    failed?: boolean | null;
+    lastDownloadedNode?: string | null;
+    posts?: number;
     preference?: number;
+    runAt?: string | null;
     url?: string | null;
     visitedAt?: string | null;
 };
@@ -3331,6 +3338,17 @@ export function createSitesUrl({ sitesUrlCreateDto }: {
         method: "POST",
         body: sitesUrlCreateDto
     })));
+}
+export function downloadSitesUrl({ id }: {
+    id: string;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: SitesUrlResponseDto;
+    }>(`/sites-url/download/${encodeURIComponent(id)}`, {
+        ...opts,
+        method: "PUT"
+    }));
 }
 export function getSitesUrlByUrl({ url }: {
     url: string;

@@ -565,6 +565,7 @@ export interface SitesUrl {
   posts: number;
   runAt: Timestamp | null;
   failed: boolean | null;
+  lastDownloadedNode?: string | null;
 }
 export interface Directory {
   id?: Generated<string>;

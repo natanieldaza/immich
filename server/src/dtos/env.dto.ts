@@ -195,4 +195,12 @@ export class EnvDto {
   @IsString()
   @Optional()
   IMMICH_COOKIES_PATH?: string;
+
+  @IsString()
+  @Optional()
+  GALLERY_DL_CONFIG_PATH?: string;
+
+  @IsString()
+  @Optional()
+  DOWNLOAD_FOLDER?: string;
 }
