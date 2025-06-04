@@ -5,10 +5,17 @@ dev-down:
 	docker compose -f ./docker/docker-compose.dev.yml down --remove-orphans
 
 dev-update:
-	docker compose -f ./docker/docker-compose.dev.yml up --build -V --remove-orphans
+	docker compose -f ./docker/docker-compose.dev.yml up --build -V --force-recreate --remove-orphans
 
 dev-scale:
-	docker compose -f ./docker/docker-compose.dev.yml up --build -V  --scale immich-server=3 --remove-orphans
+	docker compose -f ./docker/docker-compose.dev.yml up --build -V --scale immich-server=3 --remove-orphans
+
+dev-rebuild:
+	docker compose -f ./docker/docker-compose.dev.yml up --build --force-recreate --no-deps --remove-orphans -d
+
+dev-fresh:
+	docker compose -f ./docker/docker-compose.dev.yml down --remove-orphans
+	docker compose -f ./docker/docker-compose.dev.yml up --build --force-recreate --remove-orphans -d
 
 .PHONY: e2e
 e2e:
@@ -40,7 +47,7 @@ attach-server:
 	docker exec -it docker_immich-server_1 sh
 
 renovate:
-  LOG_LEVEL=debug npx renovate --platform=local --repository-cache=reset
+	LOG_LEVEL=debug npx renovate --platform=local --repository-cache=reset
 
 MODULES = e2e server web cli sdk docs .github
 

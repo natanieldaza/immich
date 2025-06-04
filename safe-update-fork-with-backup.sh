@@ -1,17 +1,35 @@
 #!/bin/bash
 
-echo "🔧 Starting safe fork update with stash + backup protection..."
+set -e  # Exit immediately on error
 
-# Step 1: Ask remotes and branches
-read -p "🛰️  Upstream remote? [upstream]: " UPSTREAM_REMOTE
-UPSTREAM_REMOTE=${UPSTREAM_REMOTE:-upstream}
+function prompt_default() {
+  local prompt="$1"
+  local default="$2"
+  read -p "$prompt [$default]: " input
+  echo "${input:-$default}"
+}
 
-read -p "🌿 Upstream branch? [main]: " UPSTREAM_BRANCH
-UPSTREAM_BRANCH=${UPSTREAM_BRANCH:-main}
+echo "🔧 Safe Fork Script: Rebase with upstream OR just save to GitHub"
 
-read -p "📦 Local base branch? [main]: " LOCAL_BASE
-LOCAL_BASE=${LOCAL_BASE:-main}
+# Ask for mode
+read -p "🛠️  Do you want to (r)ebase with upstream or just (s)ave your local changes to GitHub? (r/s): " MODE
 
+if [[ "$MODE" == "s" || "$MODE" == "S" ]]; then
+  # Simple save mode
+  echo "💾 Save Mode: Push changes to your GitHub fork"
+  BRANCH=$(git branch --show-current)
+  read -p "✏️  Commit message: " MSG
+  git add .
+  git commit -m "$MSG"
+  git push origin "$BRANCH"
+  echo "✅ Work saved to origin/$BRANCH"
+  exit 0
+fi
+
+# Rebase mode begins
+UPSTREAM_REMOTE=$(prompt_default "🛰️  Upstream remote?" "upstream")
+UPSTREAM_BRANCH=$(prompt_default "🌿 Upstream branch?" "main")
+LOCAL_BASE=$(prompt_default "📦 Local base branch?" "main")
 read -p "✏️  Your custom working branch (with edits)? " MY_BRANCH
 if [ -z "$MY_BRANCH" ]; then
   echo "❌ You must provide a branch name."
@@ -20,8 +38,7 @@ fi
 
 # Step 2: Stash uncommitted changes
 echo "🧷 Stashing uncommitted changes (if any)..."
-git stash push -u -m "Auto-stash before upstream rebase"
-STASHED=$?
+git stash push -u -m "Auto-stash before upstream rebase" || true
 
 # Step 3: Optional backup before rebase
 read -p "🛡️  Do you want to backup '$MY_BRANCH' to your fork before rebasing? (y/n): " SHOULD_BACKUP
@@ -39,27 +56,26 @@ fi
 
 # Step 4: Fetch upstream
 echo "👉 Fetching from $UPSTREAM_REMOTE..."
-git fetch "$UPSTREAM_REMOTE" || exit 1
+git fetch "$UPSTREAM_REMOTE"
 
 # Step 5: Update local base
 echo "👉 Switching to $LOCAL_BASE..."
-git checkout "$LOCAL_BASE" || exit 1
-
+git checkout "$LOCAL_BASE"
 echo "🔄 Merging $UPSTREAM_REMOTE/$UPSTREAM_BRANCH into $LOCAL_BASE..."
-git merge "$UPSTREAM_REMOTE/$UPSTREAM_BRANCH" || exit 1
+git merge "$UPSTREAM_REMOTE/$UPSTREAM_BRANCH"
 
 # Step 6: Rebase working branch
 echo "👉 Switching to $MY_BRANCH..."
-git checkout "$MY_BRANCH" || exit 1
-
+git checkout "$MY_BRANCH"
 echo "🔁 Rebasing $MY_BRANCH onto $LOCAL_BASE..."
 git rebase "$LOCAL_BASE" || {
-  echo "❌ Rebase failed. Resolve conflicts, then run 'git rebase --continue'."
+  echo "❌ Rebase failed. Resolve conflicts, then run 'git add .' and 'git rebase --continue'."
+  echo "📌 Once done, re-run this script to continue."
   exit 1
 }
 
 # Step 7: Restore stash
-if [ $STASHED -eq 0 ]; then
+if git stash list | grep -q "Auto-stash before upstream rebase"; then
   echo "📦 Applying stashed changes back..."
   git stash pop || {
     echo "⚠️  Warning: Could not apply stash. Your changes are safe in stash. Use 'git stash list' and 'git stash apply'."
@@ -71,10 +87,11 @@ fi
 # Step 8: Push updated branch
 read -p "🚀 Push updated '$MY_BRANCH' to your GitHub fork? (y/n): " SHOULD_PUSH
 if [[ "$SHOULD_PUSH" == "y" || "$SHOULD_PUSH" == "Y" ]]; then
+  git add .
+  git commit -m "Final commit after rebase and stash restoration (if any)" || true
   echo "📤 Pushing to origin/$MY_BRANCH..."
   git push origin "$MY_BRANCH"
   echo "✅ Changes pushed!"
 else
   echo "✅ Rebase complete. Changes not pushed."
 fi
-

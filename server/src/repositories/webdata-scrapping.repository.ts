@@ -48,6 +48,7 @@ export class WebDataScrappingRepository {
 
     const env = this.configRepository.getEnv();
     this.logger.log(`Cookies path: ${env.cookies_path}`);
+    
 
     if (env.cookies_path == '') {
       return '';

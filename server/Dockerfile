@@ -1,51 +1,39 @@
-# # dev build
-# FROM ghcr.io/immich-app/base-server-dev:202503251114@sha256:10e8973e8603c5729436d0f8ca32e7794375d9d1e428d65725eb03979b60c891 AS dev
-
-# RUN apt-get install --no-install-recommends -yqq tini
-# WORKDIR /usr/src/app
-
-# # Ensure package-lock.json is present and copied correctly
-# COPY server/package.json server/package-lock.json ./
-# RUN npm install -g npm@7 && \
-#   npm ci --legacy-peer-deps --no-audit --no-fund && \
-#   # exiftool-vendored.pl, sharp-linux-x64 and sharp-linux-arm64 are the only ones we need
-#   # they're marked as optional dependencies, so we need to copy them manually after pruning
-#   rm -rf node_modules/@img/sharp-libvips* && \
-#   rm -rf node_modules/@img/sharp-linuxmusl-x64
-
-# ENV PATH="${PATH}:/usr/src/app/bin" \
-#   IMMICH_ENV=development \
-#   NVIDIA_DRIVER_CAPABILITIES=all \
-#   NVIDIA_VISIBLE_DEVICES=all
-
-# ENTRYPOINT ["tini", "--", "/bin/sh"]
-
 # dev build using the base Immich image
 FROM ghcr.io/immich-app/base-server-dev:202505131114@sha256:cf4507bbbf307e9b6d8ee9418993321f2b85867da8ce14d0a20ccaf9574cb995 AS dev
 
-RUN apt-get update && apt-get install --no-install-recommends -yqq tini
+RUN apt-get update && apt-get install --no-install-recommends -yqq \
+    tini \
+    curl \
+    python3 \
+    python3-venv \
+    python3-pip && \
+    python3 -m venv /opt/venv && \
+    /opt/venv/bin/pip install --no-cache-dir gallery-dl yt-dlp && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+ENV PATH="/opt/venv/bin:${PATH}"
 
 # Install Node.js v20.18.3 and npm v11.3.0
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y nodejs && \
     npm install -g npm@11.3.0
 
-
-# Ensure working directory is set
-
 WORKDIR /usr/src/app
 COPY server/package.json server/package-lock.json ./
 COPY server/patches ./patches
+
 RUN npm ci --legacy-peer-deps --no-audit --no-fund && \
-    # Clean up sharp-related files
     rm -rf node_modules/@img/sharp-libvips* && \
     rm -rf node_modules/@img/sharp-linuxmusl-x64
 
-# Set environment variables
+# Default fallback config for gallery-dl (can be overridden by volume)
+COPY server/.gallery-dl.conf /etc/gallery-dl.conf
+
 ENV PATH="${PATH}:/usr/src/app/bin" \
     IMMICH_ENV=development \
     NVIDIA_DRIVER_CAPABILITIES=all \
     NVIDIA_VISIBLE_DEVICES=all
+
 ENTRYPOINT ["tini", "--", "/bin/sh"]
 
 FROM dev AS dev-container-server
@@ -70,10 +58,10 @@ RUN if [ "$(dpkg --print-architecture)" = "arm64" ]; then \
     dpkg --add-architecture amd64 && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-        qemu-user-static \
-        libc6:amd64 \
-        libstdc++6:amd64 \
-        libgcc1:amd64; \
+    qemu-user-static \
+    libc6:amd64 \
+    libstdc++6:amd64 \
+    libgcc1:amd64; \
     fi
 
 # Flutter SDK
@@ -85,22 +73,22 @@ ENV PATH=${PATH}:${FLUTTER_HOME}/bin
 
 # Flutter SDK
 RUN mkdir -p ${FLUTTER_HOME} \
-  && curl -C - --output flutter.tar.xz https://storage.googleapis.com/flutter_infra_release/releases/${FLUTTER_CHANNEL}/linux/flutter_linux_${FLUTTER_VERSION}-${FLUTTER_CHANNEL}.tar.xz \
-  && tar -xf flutter.tar.xz --strip-components=1 -C ${FLUTTER_HOME} \
-  && rm flutter.tar.xz \
-  && chown -R node ${FLUTTER_HOME}
+    && curl -C - --output flutter.tar.xz https://storage.googleapis.com/flutter_infra_release/releases/${FLUTTER_CHANNEL}/linux/flutter_linux_${FLUTTER_VERSION}-${FLUTTER_CHANNEL}.tar.xz \
+    && tar -xf flutter.tar.xz --strip-components=1 -C ${FLUTTER_HOME} \
+    && rm flutter.tar.xz \
+    && chown -R node ${FLUTTER_HOME}
 
 USER node
 RUN sudo apt-get update \
-  && wget -qO- https://dcm.dev/pgp-key.public | sudo gpg --dearmor -o /usr/share/keyrings/dcm.gpg \
-  && echo 'deb [signed-by=/usr/share/keyrings/dcm.gpg arch=amd64] https://dcm.dev/debian stable main' | sudo tee /etc/apt/sources.list.d/dart_stable.list \
-  && sudo apt-get update \
-  && sudo apt-get install dcm -y
+    && wget -qO- https://dcm.dev/pgp-key.public | sudo gpg --dearmor -o /usr/share/keyrings/dcm.gpg \
+    && echo 'deb [signed-by=/usr/share/keyrings/dcm.gpg arch=amd64] https://dcm.dev/debian stable main' | sudo tee /etc/apt/sources.list.d/dart_stable.list \
+    && sudo apt-get update \
+    && sudo apt-get install dcm -y
 
 COPY --chmod=777 ../.devcontainer/mobile/container-mobile-post-create.sh /immich-devcontainer/container-mobile-post-create.sh
 
 RUN dart --disable-analytics
-
+# production build stage
 FROM dev AS prod
 
 COPY server .
@@ -109,7 +97,7 @@ RUN npm prune --omit=dev --omit=optional
 COPY --from=dev /usr/src/app/node_modules/@img ./node_modules/@img
 COPY --from=dev /usr/src/app/node_modules/exiftool-vendored.pl ./node_modules/exiftool-vendored.pl
 
-# web build
+# web SDK build
 FROM node:22.16.0-alpine3.20@sha256:2289fb1fba0f4633b08ec47b94a89c7e20b829fc5679f9b7b298eaa2f1ed8b7e AS web
 
 WORKDIR /usr/src/open-api/typescript-sdk
@@ -125,14 +113,14 @@ COPY web ./
 COPY i18n ../i18n
 RUN npm run build
 
-
-# prod build
+# final prod build
 FROM ghcr.io/immich-app/base-server-prod:202505061115@sha256:9971d3a089787f0bd01f4682141d3665bcf5efb3e101a88e394ffd25bee4eedb
 
 WORKDIR /usr/src/app
 ENV NODE_ENV=production \
     NVIDIA_DRIVER_CAPABILITIES=all \
     NVIDIA_VISIBLE_DEVICES=all
+
 COPY --from=prod /usr/src/app/node_modules ./node_modules
 COPY --from=prod /usr/src/app/dist ./dist
 COPY --from=prod /usr/src/app/bin ./bin
@@ -140,11 +128,20 @@ COPY --from=web /usr/src/app/build /build/www
 COPY server/resources resources
 COPY server/package.json server/package-lock.json ./
 COPY server/start*.sh ./
-COPY "docker/scripts/get-cpus.sh" ./
+COPY docker/scripts/get-cpus.sh ./
+
 RUN npm link && npm install -g @immich/cli && npm cache clean --force
+
+# Copy gallery-dl virtualenv binaries from dev stage and add to PATH
+COPY --from=dev /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:${PATH}"
+
+# Default gallery-dl config
+COPY --from=dev /etc/gallery-dl.conf /etc/gallery-dl.conf
 
 COPY LICENSE /licenses/LICENSE.txt
 COPY LICENSE /LICENSE
+
 ENV PATH="${PATH}:/usr/src/app/bin"
 
 ARG BUILD_ID
@@ -164,6 +161,7 @@ ENV IMMICH_SOURCE_URL=https://github.com/immich-app/immich/commit/${BUILD_SOURCE
 
 VOLUME /usr/src/app/upload
 EXPOSE 2283
+
 ENTRYPOINT ["tini", "--", "/bin/bash"]
 CMD ["start.sh"]
 

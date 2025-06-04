@@ -99,6 +99,7 @@ async setVisited(id: string, visitedAt: Date): Promise<SitesUrlResponseDto | nul
       posts: result.posts ?? 0,
       runAt: result.runAt ? new Date(result.runAt) : null,
       failed: result.failed ?? null,
+      lastDownloadedNode: result.lastDownloadedNode ? String(result.lastDownloadedNode) : null,
     } : null;
   }
 
@@ -119,16 +120,19 @@ async setVisited(id: string, visitedAt: Date): Promise<SitesUrlResponseDto | nul
       preference: siteUrl.preference,
       description: siteUrl.description,
       posts: siteUrl.posts ?? 0,
+      lastDownloadedNode: siteUrl.lastDownloadedNode ? String(siteUrl.lastDownloadedNode) : null,
     })) ?? [];
   }
   
   
-  async setProcessed(id: string, runAt: Date, failed: boolean): Promise<SitesUrlResponseDto | null> {
+  async setProcessed(id: string, runAt: Date, failed: boolean,lastDownloadedNode:string|null): Promise<SitesUrlResponseDto | null> {
+    this.logger.log(`Setting site URL ${id} as processed at ${runAt.toISOString()} with failed status: ${failed}`);
     const [result] = await this.db
       .updateTable('sites_url')
       .set({
         runAt: runAt.toISOString(),
-        failed: failed,
+        failed,
+        lastDownloadedNode
       })
       .where('id', '=', id)
       .returningAll()
@@ -143,6 +147,7 @@ async setVisited(id: string, visitedAt: Date): Promise<SitesUrlResponseDto | nul
       posts: result.posts ?? 0,
       runAt: result.runAt ? new Date(result.runAt) : null,
       failed: result.failed ?? null,
+      lastDownloadedNode: result.lastDownloadedNode ? String(result.lastDownloadedNode) : null,
     } : null;
   }
 
