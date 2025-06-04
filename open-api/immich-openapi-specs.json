@@ -6497,6 +6497,47 @@
         ]
       }
     },
+    "/sites-url/download/{id}": {
+      "put": {
+        "operationId": "downloadSitesUrl",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SitesUrlResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "tags": [
+          "Sites URL"
+        ]
+      }
+    },
     "/sites-url/url": {
       "get": {
         "operationId": "getSitesUrlByUrl",
@@ -13963,6 +14004,10 @@
           "id": {
             "type": "string"
           },
+          "lastDownloadedNode": {
+            "nullable": true,
+            "type": "string"
+          },
           "posts": {
             "default": 0,
             "type": "number"
@@ -14002,6 +14047,10 @@
             "default": false,
             "nullable": true,
             "type": "boolean"
+          },
+          "lastDownloadedNode": {
+            "nullable": true,
+            "type": "string"
           },
           "posts": {
             "default": 0,

@@ -61,7 +61,12 @@ export class SitesUrlController {
   @Get()
   @Authenticated({ permission: Permission.URL_READ })
   async getAllSitesUrl(@Auth() auth: AuthDto): Promise<SitesUrlResponseDto[]> {
-    return await this.service.getAll(auth);
+    const sitesUrl = await this.service.getAll(auth);
+    for (const site of sitesUrl) {
+      this.logger.log(`Retrieved site URL: ${JSON.stringify(site)}`);
+    }
+
+    return sitesUrl;
   }
   @Get(':id')
   @Authenticated({ permission: Permission.URL_READ })
@@ -83,6 +88,19 @@ export class SitesUrlController {
       throw new NotFoundException('Site URL not found');
     }
     return sitesUrl;
+  }
+
+  @Put('download/:id')
+  @Authenticated({ permission: Permission.URL_UPDATE })
+  async downloadSitesUrl(
+    @Auth() auth: AuthDto,
+    @Param('id') id: string,
+  ): Promise<SitesUrlResponseDto> {
+    const updatedSitesUrl = await this.service.dowload(auth, id);
+    if (!updatedSitesUrl) {
+      throw new NotFoundException('Site URL not found');
+    }
+    return updatedSitesUrl;
   }
 }
 

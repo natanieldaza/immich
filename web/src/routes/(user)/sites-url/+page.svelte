@@ -7,11 +7,14 @@
     notificationController,
     NotificationType,
   } from '$lib/components/shared-components/notification/notification';
+
+  import { modalManager } from '$lib/managers/modal-manager.svelte';
+  import SiteUrlModal from '$lib/modals/SiteUrlModal.svelte';
+
   import { AppRoute } from '$lib/constants';
-  import { handleError } from '$lib/utils/handle-error';
   import {
-    createSitesUrl,
     deleteSitesUrl,
+    downloadSitesUrl,
     getAllSitesUrl,
     type SitesUrlCreateDto,
     type SitesUrlResponseDto,
@@ -37,7 +40,7 @@
   let sortAsc = true;
   let pager = $state(1);
   let pageSize = 10;
-  let showEditModal = $state(false);
+
   let isNew = false;
   let editingItem: SitesUrlCreateDto | SitesUrlResponseDto | null = null;
   let inlineEditingId: string | null = null;
@@ -88,94 +91,83 @@
     $urls = await getAllSitesUrl();
   });
 
-  function openCreateModal() {
-    editingItem = {
+  const openCreateModal = async () => {
+    const newSite: SitesUrlCreateDto = {
       url: 'https://',
       description: '',
-      preference: 3, // default preference
-      posts: 0, // default posts
+      preference: 3,
+      posts: 0,
+      failed: false,
+      lastDownloadedNode: '',
     };
-    isNew = true;
-    showEditModal = true;
-  }
 
-  function openEditModal(item: SitesUrlResponseDto) {
+    const savedUrl = await modalManager.show<SiteUrlModal>(SiteUrlModal, {
+      newSiteUrl: newSite,
+      isNew: true,
+    });
+
+    if (savedUrl) {
+      $urls = [...$urls, savedUrl]; // Update the reactive store with the new URL
+      pager = Math.ceil($urls.length / pageSize); // Adjust pager to show the new item
+    }
+    // Note: modalManager.show returns a promise that resolves with the saved URL
+
+    return savedUrl;
+  };
+
+  const openEditModal = async (item: SitesUrlResponseDto) => {
+    const editingItem: SitesUrlUpdateDto = {
+      id: item.id,
+      url: item.url,
+      description: item.description,
+      preference: item.preference,
+      posts: item.posts,
+      failed: item.failed,
+      lastDownloadedNode: item.lastDownloadedNode,
+    };
+
+    const savedUrl = await modalManager.show<{
+      updateSiteUrl: SitesUrlUpdateDto;
+      isNew: boolean;
+      id?: string;
+      onClose: (siteUrlUpdated?: SitesUrlCreateDto) => void;
+    }>(SiteUrlModal, {
+      updateSiteUrl: editingItem,
+      isNew: false,
+      id: item.id,
+    });
+
+    if (savedUrl) {
+      $urls = $urls.map((u) => (u.id === item.id ? savedUrl : u));
+      pager = Math.ceil($urls.length / pageSize);
+    }
+  };
+
+  function openInlineEdit(item: SitesUrlResponseDto) {
+    inlineEditingId = item.id;
     editingItem = { ...item };
     isNew = false;
-    showEditModal = true;
-  }
-
-  async function saveModal() {
-    try {
-      const payload = {
-        ...editingItem,
-        url: editingItem.url.trim(),
-        description: editingItem.description?.trim() ?? null,
-        preference: Number(editingItem.preference) || 1,
-        posts: editingItem.posts || 0, // default to 0 if not provided
-      };
-
-      if (!payload.url || typeof payload.url !== 'string' || !payload.url.startsWith('http')) {
-        alert('Please enter a valid URL');
-        return;
-      }
-      if (payload.preference < 1 || payload.preference > 5) {
-        alert('Preference must be a number between 1 and 5');
-        return;
-      }
-
-      if (isNew) {
-        try {
-          await createSitesUrl({
-            sitesUrlCreateDto: {
-              url: payload.url,
-              description: payload.description,
-              preference: payload.preference,
-              posts: payload.posts || 0, // default to 0 if not provided
-            },
-          });
-        } catch (error) {
-          handleError(error, 'Failed to create site URL');
-          return;
-        }
-      } else {
-        const updatePayload = Object.fromEntries(
-          Object.entries({
-            url: payload.url,
-            description: payload.description,
-            preference: payload.preference,
-            posts: payload.posts,
-          }).filter(([_, v]) => v !== undefined),
-        );
-
-        try {
-          await updateSitesUrl({
-            id: editingItem.id,
-            sitesUrlUpdateDto: {
-              ...updatePayload,
-            },
-          });
-        } catch (error) {
-          handleError(error, 'Failed to update site URL');
-          return;
-        }
-      }
-
-      showEditModal = false;
-      await fetchData(); // ✅ this now correctly updates $urls
-    } catch (err) {
-      console.error('Unexpected error:', err);
-      notificationController.show({
-        type: NotificationType.Error,
-        message: 'Failed to save URL entry',
-      });
-    }
   }
 
   async function deleteRow(id: string) {
     await deleteSitesUrl({ id });
     await fetchData(); // ✅ properly updates UI
     pager = 1;
+  }
+  async function downlodadUrl(id: string) {
+    try {
+      await downloadSitesUrl({ id });
+      notificationController.show({
+        type: NotificationType.Info,
+        message: 'Download started successfully',
+      });
+    } catch (err) {
+      console.error('Download failed:', err);
+      notificationController.show({
+        type: NotificationType.Error,
+        message: 'Download failed',
+      });
+    }
   }
 
   async function saveInlineEdit(item: SitesUrlResponseDto) {
@@ -205,11 +197,6 @@
   }
 </script>
 
-<svelte:window
-  on:keydown={(e) => {
-    if (e.key === 'Escape') showEditModal = false;
-  }}
-/>
 <UserPageLayout
   title={$t('user.sites-url.title')}
   description={$t('user.sites-url.description')}
@@ -228,7 +215,7 @@
     <!-- Desktop Table -->
     <div class="hidden sm:block overflow-x-auto">
       <table class="min-w-full border border-collapse text-sm">
-        <thead class="bg-gray-100">
+        <thead class="bg-white-100">
           <tr>
             <th class="p-2 cursor-pointer" on:click={() => toggleSort('url')}>URL</th>
             <th class="p-2 cursor-pointer" on:click={() => toggleSort('posts')}>POSTS</th>
@@ -236,21 +223,34 @@
             <th class="p-2 cursor-pointer" on:click={() => toggleSort('createdAt')}>Created</th>
             <th class="p-2 cursor-pointer" on:click={() => toggleSort('visitedAt')}>Visited</th>
             <th class="p-2 cursor-pointer" on:click={() => toggleSort('preference')}>Preference</th>
+            <th class="p-2 cursor-pointer" on:click={() => toggleSort('runAt')}>Runned</th>
+            <th class="p-2 cursor-pointer" on:click={() => toggleSort('failed')}>Failed</th>
+            <th class="p-2 cursor-pointer" on:click={() => toggleSort('lastDownloadedNode')}>Last Downloaded Node</th>
             <th class="p-2">Actions</th>
           </tr>
         </thead>
         <tbody>
           {#each getPaginated() as item}
             <tr class="border-t hover:bg-gray-50">
-              <td class="p-2 break-words">{item.url}</td>
+              <td class="p-2 break-words">
+                <a href={item.url} target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">
+                  {item.url.startsWith('http') ? item.url : `https://${item.url}`}</a
+                ></td
+              >
               <td class="p-2">{item.posts ?? '-'}</td>
               <td class="p-2 break-words">{item.description ?? '-'}</td>
               <td class="p-2">{item.createdAt ? new Date(item.createdAt).toLocaleString() : '-'}</td>
               <td class="p-2">{item.visitedAt ? new Date(item.visitedAt).toLocaleString() : '-'}</td>
               <td class="p-2">{item.preference ?? '-'}</td>
+              <td class="p-2">{item.runAt ? new Date(item.runAt).toLocaleString() : '-'}</td>
+              <td class="p-2">{item.failed == null ? '-' : item.failed ? 'Yes' : 'No'}</td>
+              <td class="p-2 break-words">
+                {item.lastDownloadedNode ? item.lastDownloadedNode.name : '-'}
+              </td>
               <td class="p-2 flex flex-col sm:flex-row gap-2">
                 <button on:click={() => openEditModal(item)}>Edit</button>
                 <button on:click={() => deleteRow(item.id)}>Delete</button>
+                <button on:click={() => downlodadUrl(item.id)}>Download</button>
               </td>
             </tr>
           {/each}
@@ -301,30 +301,4 @@
 
   <!-- Create Button -->
   <button class="mt-4 px-4 py-2 bg-blue-500 text-white rounded" on:click={openCreateModal}>Add New</button>
-
-  <!-- Modal -->
-  {#if showEditModal}
-    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white p-4 rounded shadow w-full max-w-md space-y-4">
-        <h3 class="text-lg font-bold">{isNew ? 'Add New URL' : 'Edit URL'}</h3>
-
-        <input class="w-full border p-2" placeholder="URL" bind:value={editingItem.url} />
-        <input class="w-full border p-2" placeholder="POSTS" bind:value={editingItem.posts} />
-        <textarea class="w-full border p-2" placeholder="Description" bind:value={editingItem.description}></textarea>
-        <label class="flex flex-col gap-2">
-          <span>Preference (1–5)</span>
-          <select bind:value={editingItem.preference} class="border p-2">
-            {#each [1, 2, 3, 4, 5] as num}
-              <option value={num}>{num}</option>
-            {/each}
-          </select>
-        </label>
-
-        <div class="flex justify-end gap-2">
-          <button on:click={() => (showEditModal = false)}>Cancel</button>
-          <button on:click={saveModal}>Save</button>
-        </div>
-      </div>
-    </div>
-  {/if}
 </UserPageLayout>

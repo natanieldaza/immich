@@ -104,6 +104,8 @@ export interface EnvData {
   noColor: boolean;
   nodeVersion?: string;
   cookies_path: string;
+  gallery_dl_config?: string;
+  gallery_dl_download?: string;
 }
 
 const productionKeys = {
@@ -197,6 +199,9 @@ const getEnv = (): EnvData => {
         ssl: dto.DB_SSL_MODE || undefined,
       };
   const cookies_path = dto.IMMICH_COOKIES_PATH ? '/usr/src/app/cookies/' : '';
+  const gallery_dl_config = dto.GALLERY_DL_CONFIG_PATH
+    ? '/usr/src/app/gallery-dl.conf' : '';
+  const gallery_dl_download = dto.DOWNLOAD_FOLDER? '/usr/src/app/downloads/' : '';
       
   let vectorExtension: VectorExtension | undefined;
   switch (dto.DB_VECTOR_EXTENSION) {
@@ -318,7 +323,9 @@ const getEnv = (): EnvData => {
     workers,
 
     noColor: !!dto.NO_COLOR,
-    cookies_path: cookies_path,
+    cookies_path,
+    gallery_dl_config,
+    gallery_dl_download
     };
 };
 

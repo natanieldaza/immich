@@ -42,5 +42,9 @@ export class SitesUrlTable {
 
   @Column({ type: 'integer', nullable: true, default: 0 })
   posts!: number ;
+
+  @Column({ type: 'character varying', nullable: true, default: false })
+  lastDownloadedNode?: string;
+  
 }
 

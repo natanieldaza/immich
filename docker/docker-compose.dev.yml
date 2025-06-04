@@ -35,7 +35,9 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /media/yuri/SORT/SORTING:/mnt/media/SORTING
       - /media/yuri/SORT/TEST:/mnt/media/TEST
-      - ${IMMICH_COOKIES_PATH}:/usr/src/app/cookies:ro
+      - ${IMMICH_COOKIES_PATH}:/usr/src/app/cookies
+      - ${GALLERY_DL_CONFIG_PATH}:/etc/gallery-dl.conf:ro
+      - ${DOWNLOAD_FOLDER}:/usr/src/app/downloads
     env_file:
       - .env
     environment:
