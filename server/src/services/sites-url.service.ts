@@ -1,12 +1,16 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { spawn } from 'child_process';
+import { OnJob } from 'src/decorators';
 import { AuthDto } from 'src/dtos/auth.dto';
 import { SitesUrlCreateDto, SitesUrlResponseDto, SitesUrlUpdateDto } from 'src/dtos/sites-url.dto';
+import { JobName, QueueName } from 'src/enum';
 import { BaseService } from 'src/services/base.service';
+import { JobOf } from 'src/types';
 
 
 @Injectable()
 export class SitesUrlService extends BaseService {
+    private intervalId: NodeJS.Timeout | null = null;
     async create(auth: AuthDto, dto: SitesUrlCreateDto): Promise<SitesUrlResponseDto> {
         try {
             if (!dto.url) {
@@ -230,12 +234,24 @@ export class SitesUrlService extends BaseService {
             }
         }
     }
-    async dowload(auth: AuthDto, id: string): Promise<SitesUrlResponseDto> {
+    async dowload(auth: AuthDto, id: string) {
         const siteUrl = await this.sitesUrlRepository.getById(id);
         if (!siteUrl) {
             throw new BadRequestException('Site URL not found');
         }
-        const [failed,lastDownloadedNode] = await this.runGalleryDlOnUrl(auth, siteUrl.url);
+        if (!siteUrl.url) {
+            throw new BadRequestException('Site URL is empty');
+        }
+        this.logger.log(`Starting download for Site URL: ${siteUrl.url}`);
+        await this.jobRepository.queue({
+            name: JobName.GALLERY_DOWNLOADER,
+            data: {
+                id: siteUrl.id,
+                url: siteUrl.url,
+            }
+        });
+        // Check if the URL is already processed
+        /*const [failed,lastDownloadedNode] = await this.runGalleryDlOnUrl(auth, siteUrl.url);
         await this.sitesUrlRepository.setProcessed(siteUrl.id, new Date(), failed,lastDownloadedNode);
         if (failed) {
             throw new BadRequestException(`Failed to download content from URL: ${siteUrl.url}`);
@@ -251,7 +267,138 @@ export class SitesUrlService extends BaseService {
             runAt: new Date(),
             failed: false,
             lastDownloadedNode: lastDownloadedNode ? String(lastDownloadedNode) : null,
-        };
+        };*/
     }
 
+    async startDownload(auth: AuthDto, preference:number) {
+        if (preference < 6) {
+            await this.jobRepository.queue({
+                name: JobName.QUEUE_GALLERY_DOWNLOADER,
+                data: {
+                    id: '', // No specific ID needed for this job
+                    preference,
+                }
+            });
+        } else {
+            await this.jobRepository.queue({
+                name: JobName.QUEUE_GALLERY_DOWNLOADER_PRIORITY,
+                data: {
+                    id: '', // No specific ID needed for this job
+                    preference,
+                }
+            });
+        }
+
+      }
+    
+     async stopDownload(auth: AuthDto, preference: number) {
+        if(preference < 6) {
+            await this.jobRepository.stop(QueueName.GALLERY_DOWNLOADER_QUEUE);
+        }
+        else {
+            await this.jobRepository.stop(QueueName.GALLERY_DOWNLOADER_PRIORITY_QUEUE);
+        }
+      }
+        @OnJob({ name: JobName.QUEUE_GALLERY_DOWNLOADER, queue: QueueName.GALLERY_DOWNLOADER_QUEUE })
+        async handleGalleryDownloaderJob(job: JobOf<JobName.QUEUE_GALLERY_DOWNLOADER>): Promise<void> {
+            const preference = job.preference;
+            if (typeof preference !== 'number') {
+                this.logger.error(`Invalid preference type: ${typeof preference}. Expected a number.`);
+                throw new BadRequestException('Invalid preference type. Expected a number.');
+            }
+            const siteUrls = await this.sitesUrlRepository.getAllByPreferenceSortedByPosts(preference);
+            if (!siteUrls || siteUrls.length === 0) {
+                this.logger.warn(`No Site URLs found with preference ${preference} to run gallery-dl on.`);
+                return;
+            }
+            await this.jobRepository.queueAll(
+
+                siteUrls.map((siteUrl) => ({
+                    name: JobName.GALLERY_DOWNLOADER,
+                    data: {
+                        id: siteUrl.id,
+                        url: siteUrl.url,
+                    }
+                }))
+            );
+
+            
+            
+        }
+        @OnJob({ name: JobName.GALLERY_DOWNLOADER, queue: QueueName.GALLERY_DOWNLOADER_QUEUE })
+        async handleGalleryDownloader(job: JobOf<JobName.GALLERY_DOWNLOADER>): Promise<void> {
+            const { id, url } = job;
+            if (!id || !url) {
+                this.logger.error(`Invalid job data: id=${id}, url=${url}`);
+                throw new BadRequestException('Invalid job data. Both id and url are required.');
+            }
+        
+            try {
+                this.logger.log(`Processing URL: ${url}`);
+                const [failed,lastDownloadedNode] = await this.scrapeWithGalleryDl(url);
+                await this.sitesUrlRepository.setProcessed(id, new Date(), failed,lastDownloadedNode);
+                if (failed) {
+                    this.logger.error(`gallery-dl failed for URL: ${url}`);
+                    return; // Skip to the next URL if gallery-dl failed
+                }
+                this.logger.log(`Successfully processed URL: ${url}`);
+
+            } catch (error) {
+                this.logger.error(`Error processing URL ${url}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                await this.sitesUrlRepository.setProcessed(id, new Date(), true, null);
+            }
+        }
+              
+        @OnJob({ name: JobName.QUEUE_GALLERY_DOWNLOADER_PRIORITY, queue: QueueName.GALLERY_DOWNLOADER_PRIORITY_QUEUE })
+        async handleGalleryDownloaderPriorityJob(job: JobOf<JobName.QUEUE_GALLERY_DOWNLOADER_PRIORITY>): Promise<void> {
+        const preference = job.preference;
+        if (typeof preference !== 'number') {
+            this.logger.error(`Invalid preference type: ${typeof preference}. Expected a number.`);
+            throw new BadRequestException('Invalid preference type. Expected a number.');   
+        }
+        if( !Number.isInteger(preference) || preference < 6) {
+            this.logger.error(`Invalid preference value: ${preference}. Expected an integer greater than or equal to 6.`);
+            throw new BadRequestException('Invalid preference value. Expected an integer greater than or equal to 6.');
+        }
+        const siteUrls = await this.sitesUrlRepository.getAllByPreferenceSortedByPosts(preference);
+        if (!siteUrls || siteUrls.length === 0) {
+            this.logger.warn(`No Site URLs found with preference ${preference} to run gallery-dl on.`);
+            return;
+        }
+        
+        await this.jobRepository.queueAll(
+
+            siteUrls.map((siteUrl) => ({
+                name: JobName.GALLERY_DOWNLOADER_PRIORITY,
+                data: {
+                    id: siteUrl.id,
+                    url: siteUrl.url,
+                }
+            }))
+        );
+    }
+
+    @OnJob({ name: JobName.GALLERY_DOWNLOADER_PRIORITY, queue: QueueName.GALLERY_DOWNLOADER_PRIORITY_QUEUE })
+    async handleGalleryDownloaderPriority(job: JobOf<JobName.GALLERY_DOWNLOADER_PRIORITY>): Promise<void> {
+        const { id, url } = job;
+        if (!id || !url) {
+            this.logger.error(`Invalid job data: id=${id}, url=${url}`);
+            throw new BadRequestException('Invalid job data. Both id and url are required.');
+        }
+    
+        try {
+            this.logger.log(`Processing URL: ${url}`);
+            const [failed,lastDownloadedNode] = await this.scrapeWithGalleryDl(url);
+            await this.sitesUrlRepository.setProcessed(id, new Date(), failed,lastDownloadedNode);
+            if (failed) {
+                this.logger.error(`gallery-dl failed for URL: ${url}`);
+                return; // Skip to the next URL if gallery-dl failed
+            }
+            this.logger.log(`Successfully processed URL: ${url}`);
+
+        } catch (error) {
+            this.logger.error(`Error processing URL ${url}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            await this.sitesUrlRepository.setProcessed(id, new Date(), true, null);
+        }
+    }
 }

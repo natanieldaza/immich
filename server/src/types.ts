@@ -186,6 +186,11 @@ export interface IEntityJob extends IBaseJob {
   notify?: boolean;
   directoryId?: string;
 }
+
+export interface IGalleryDownloaderJob extends IEntityJob {
+  url?: string;
+  preference?:number;
+}
 export interface ISidecarJob extends IEntityJob {
   directoryId?: string;
 }
@@ -432,8 +437,13 @@ export type JobItem =
 
   //LOCATION DATA SCRAPPING WEB
   | { name: JobName.QUEUE_LOCATION_DATA_SCRAPPING_WEB; data: IBaseJob }
-  | { name: JobName.LOCATION_DATA_SCRAPPING_WEB; data: IWebGeoLocationJob };
+  | { name: JobName.LOCATION_DATA_SCRAPPING_WEB; data: IWebGeoLocationJob }
 
+  // GALLERY DOWNLOADER
+  | { name: JobName.QUEUE_GALLERY_DOWNLOADER; data: IGalleryDownloaderJob }
+  | { name: JobName.GALLERY_DOWNLOADER; data: IGalleryDownloaderJob }
+  | { name: JobName.QUEUE_GALLERY_DOWNLOADER_PRIORITY; data: IGalleryDownloaderJob }
+  | { name: JobName.GALLERY_DOWNLOADER_PRIORITY; data: IGalleryDownloaderJob };
 
 
 export type VectorExtension = (typeof VECTOR_EXTENSIONS)[number];

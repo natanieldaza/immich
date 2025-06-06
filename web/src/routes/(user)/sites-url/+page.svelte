@@ -36,14 +36,15 @@
   const urls = writable<SitesUrlResponseDto[]>(data.urls);
 
   let search = $state('');
-  let sortKey: keyof SitesUrlResponseDto = 'createdAt';
-  let sortAsc = true;
+  let sortKey = $state<keyof SitesUrlResponseDto>('createdAt');
+  let sortAsc = $state(true);
   let pager = $state(1);
-  let pageSize = 10;
+  let pageSize = 100;
 
   let isNew = false;
   let editingItem: SitesUrlCreateDto | SitesUrlResponseDto | null = null;
   let inlineEditingId: string | null = null;
+  let selectedPreference = 0;
 
   async function fetchData() {
     try {
@@ -195,11 +196,59 @@
       });
     }
   }
+
+  async function downloadAll() {
+    try {
+      //await downloadAllSitesUrl();
+      notificationController.show({
+        type: NotificationType.Info,
+        message: 'All downloads started successfully',
+      });
+    } catch (err) {
+      console.error('Download all failed:', err);
+      notificationController.show({
+        type: NotificationType.Error,
+        message: 'Download all failed',
+      });
+    }
+  }
+
+  async function downloadPriority() {
+    try {
+      //await downloadSitesUrlByPreference({ preference: 0 });
+      notificationController.show({
+        type: NotificationType.Info,
+        message: 'Priority download started',
+      });
+    } catch (err) {
+      console.error('Priority download failed:', err);
+      notificationController.show({
+        type: NotificationType.Error,
+        message: 'Priority download failed',
+      });
+    }
+  }
+
+  async function downloadBySelectedPreference() {
+    try {
+      //await downloadSitesUrlByPreference({ preference: selectedPreference });
+      notificationController.show({
+        type: NotificationType.Info,
+        message: `Download started for preference ${selectedPreference}`,
+      });
+    } catch (err) {
+      console.error('Download by preference failed:', err);
+      notificationController.show({
+        type: NotificationType.Error,
+        message: 'Download by preference failed',
+      });
+    }
+  }
 </script>
 
 <UserPageLayout
-  title={$t('user.sites-url.title')}
-  description={$t('user.sites-url.description')}
+  title={$t('sites_url_title')}
+  description={$t('sites_url_description')}
   icon={mdiEyeOutline}
   class="p-4"
   use={[[scrollMemory, { routeStartsWith: AppRoute.SITES_URL }], [focusTrap]]}
@@ -292,13 +341,31 @@
     </div>
   </div>
 
-  <!-- Pagination Controls -->
-  <div class="mt-4 flex items-center justify-between">
-    <button on:click={() => (pager = Math.max(1, pager - 1))} disabled={pager === 1}>Previous</button>
-    <span>Page {pager}</span>
-    <button on:click={() => (pager += 1)} disabled={pager * pageSize >= getFiltered().length}>Next</button>
+  <div class="mt-4 flex items-center justify-between flex-wrap gap-2">
+    <div class="flex gap-2">
+      <button on:click={() => (pager = Math.max(1, pager - 1))} disabled={pager === 1}>Previous</button>
+      <span>Page {pager}</span>
+      <button on:click={() => (pager += 1)} disabled={pager * pageSize >= getFiltered().length}>Next</button>
+      <span class="ml-2">Total: {getFiltered().length} items</span>
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      <button class="px-4 py-2 bg-blue-500 text-white rounded" on:click={openCreateModal}>Add New</button>
+      <button class="px-4 py-2 bg-green-500 text-white rounded" on:click={downloadAll}>Download All</button>
+      <button class="px-4 py-2 bg-orange-500 text-white rounded" on:click={downloadPriority}>Download Priority</button>
+      <div class="flex items-center gap-2">
+        <label for="preference" class="text-sm font-medium">Preference:</label>
+        <select id="preference" class="border rounded px-2 py-1" bind:value={selectedPreference}>
+          <option value="0">0 (All)</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+        </select>
+        <button class="px-4 py-2 bg-purple-500 text-white rounded" on:click={downloadBySelectedPreference}>
+          Download by Preference
+        </button>
+      </div>
+    </div>
   </div>
-
-  <!-- Create Button -->
-  <button class="mt-4 px-4 py-2 bg-blue-500 text-white rounded" on:click={openCreateModal}>Add New</button>
 </UserPageLayout>

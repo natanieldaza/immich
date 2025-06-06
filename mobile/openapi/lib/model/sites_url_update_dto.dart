@@ -14,14 +14,26 @@ class SitesUrlUpdateDto {
   /// Returns a new [SitesUrlUpdateDto] instance.
   SitesUrlUpdateDto({
     this.description,
+    this.failed = false,
+    this.lastDownloadedNode,
+    this.posts = 0,
     this.preference = 0,
+    this.runAt,
     this.url,
     this.visitedAt,
   });
 
   String? description;
 
+  bool? failed;
+
+  String? lastDownloadedNode;
+
+  num posts;
+
   num preference;
+
+  DateTime? runAt;
 
   String? url;
 
@@ -30,7 +42,11 @@ class SitesUrlUpdateDto {
   @override
   bool operator ==(Object other) => identical(this, other) || other is SitesUrlUpdateDto &&
     other.description == description &&
+    other.failed == failed &&
+    other.lastDownloadedNode == lastDownloadedNode &&
+    other.posts == posts &&
     other.preference == preference &&
+    other.runAt == runAt &&
     other.url == url &&
     other.visitedAt == visitedAt;
 
@@ -38,12 +54,16 @@ class SitesUrlUpdateDto {
   int get hashCode =>
     // ignore: unnecessary_parenthesis
     (description == null ? 0 : description!.hashCode) +
+    (failed == null ? 0 : failed!.hashCode) +
+    (lastDownloadedNode == null ? 0 : lastDownloadedNode!.hashCode) +
+    (posts.hashCode) +
     (preference.hashCode) +
+    (runAt == null ? 0 : runAt!.hashCode) +
     (url == null ? 0 : url!.hashCode) +
     (visitedAt == null ? 0 : visitedAt!.hashCode);
 
   @override
-  String toString() => 'SitesUrlUpdateDto[description=$description, preference=$preference, url=$url, visitedAt=$visitedAt]';
+  String toString() => 'SitesUrlUpdateDto[description=$description, failed=$failed, lastDownloadedNode=$lastDownloadedNode, posts=$posts, preference=$preference, runAt=$runAt, url=$url, visitedAt=$visitedAt]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -52,7 +72,23 @@ class SitesUrlUpdateDto {
     } else {
     //  json[r'description'] = null;
     }
+    if (this.failed != null) {
+      json[r'failed'] = this.failed;
+    } else {
+    //  json[r'failed'] = null;
+    }
+    if (this.lastDownloadedNode != null) {
+      json[r'lastDownloadedNode'] = this.lastDownloadedNode;
+    } else {
+    //  json[r'lastDownloadedNode'] = null;
+    }
+      json[r'posts'] = this.posts;
       json[r'preference'] = this.preference;
+    if (this.runAt != null) {
+      json[r'runAt'] = this.runAt!.toUtc().toIso8601String();
+    } else {
+    //  json[r'runAt'] = null;
+    }
     if (this.url != null) {
       json[r'url'] = this.url;
     } else {
@@ -76,7 +112,11 @@ class SitesUrlUpdateDto {
 
       return SitesUrlUpdateDto(
         description: mapValueOfType<String>(json, r'description'),
+        failed: mapValueOfType<bool>(json, r'failed') ?? false,
+        lastDownloadedNode: mapValueOfType<String>(json, r'lastDownloadedNode'),
+        posts: num.parse('${json[r'posts']}'),
         preference: num.parse('${json[r'preference']}'),
+        runAt: mapDateTime(json, r'runAt', r''),
         url: mapValueOfType<String>(json, r'url'),
         visitedAt: mapDateTime(json, r'visitedAt', r''),
       );

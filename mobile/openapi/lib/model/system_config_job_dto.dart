@@ -15,6 +15,8 @@ class SystemConfigJobDto {
   SystemConfigJobDto({
     required this.backgroundTask,
     required this.faceDetection,
+    required this.galleryDownloaderPriorityQueue,
+    required this.galleryDownloaderQueue,
     required this.library_,
     required this.locationDataScrappingWeb,
     required this.metadataExtraction,
@@ -34,6 +36,10 @@ class SystemConfigJobDto {
   JobSettingsDto backgroundTask;
 
   JobSettingsDto faceDetection;
+
+  JobSettingsDto galleryDownloaderPriorityQueue;
+
+  JobSettingsDto galleryDownloaderQueue;
 
   JobSettingsDto library_;
 
@@ -67,6 +73,8 @@ class SystemConfigJobDto {
   bool operator ==(Object other) => identical(this, other) || other is SystemConfigJobDto &&
     other.backgroundTask == backgroundTask &&
     other.faceDetection == faceDetection &&
+    other.galleryDownloaderPriorityQueue == galleryDownloaderPriorityQueue &&
+    other.galleryDownloaderQueue == galleryDownloaderQueue &&
     other.library_ == library_ &&
     other.locationDataScrappingWeb == locationDataScrappingWeb &&
     other.metadataExtraction == metadataExtraction &&
@@ -87,6 +95,8 @@ class SystemConfigJobDto {
     // ignore: unnecessary_parenthesis
     (backgroundTask.hashCode) +
     (faceDetection.hashCode) +
+    (galleryDownloaderPriorityQueue.hashCode) +
+    (galleryDownloaderQueue.hashCode) +
     (library_.hashCode) +
     (locationDataScrappingWeb.hashCode) +
     (metadataExtraction.hashCode) +
@@ -103,12 +113,14 @@ class SystemConfigJobDto {
     (videoConversion.hashCode);
 
   @override
-  String toString() => 'SystemConfigJobDto[backgroundTask=$backgroundTask, faceDetection=$faceDetection, library_=$library_, locationDataScrappingWeb=$locationDataScrappingWeb, metadataExtraction=$metadataExtraction, migration=$migration, notifications=$notifications, personDataScrapping=$personDataScrapping, personSidecar=$personSidecar, search=$search, sidecar=$sidecar, smartSearch=$smartSearch, socialMediaDataScrapping=$socialMediaDataScrapping, socialMediaDataScrappingWeb=$socialMediaDataScrappingWeb, thumbnailGeneration=$thumbnailGeneration, videoConversion=$videoConversion]';
+  String toString() => 'SystemConfigJobDto[backgroundTask=$backgroundTask, faceDetection=$faceDetection, galleryDownloaderPriorityQueue=$galleryDownloaderPriorityQueue, galleryDownloaderQueue=$galleryDownloaderQueue, library_=$library_, locationDataScrappingWeb=$locationDataScrappingWeb, metadataExtraction=$metadataExtraction, migration=$migration, notifications=$notifications, personDataScrapping=$personDataScrapping, personSidecar=$personSidecar, search=$search, sidecar=$sidecar, smartSearch=$smartSearch, socialMediaDataScrapping=$socialMediaDataScrapping, socialMediaDataScrappingWeb=$socialMediaDataScrappingWeb, thumbnailGeneration=$thumbnailGeneration, videoConversion=$videoConversion]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
       json[r'backgroundTask'] = this.backgroundTask;
       json[r'faceDetection'] = this.faceDetection;
+      json[r'galleryDownloaderPriorityQueue'] = this.galleryDownloaderPriorityQueue;
+      json[r'galleryDownloaderQueue'] = this.galleryDownloaderQueue;
       json[r'library'] = this.library_;
       json[r'locationDataScrappingWeb'] = this.locationDataScrappingWeb;
       json[r'metadataExtraction'] = this.metadataExtraction;
@@ -137,6 +149,8 @@ class SystemConfigJobDto {
       return SystemConfigJobDto(
         backgroundTask: JobSettingsDto.fromJson(json[r'backgroundTask'])!,
         faceDetection: JobSettingsDto.fromJson(json[r'faceDetection'])!,
+        galleryDownloaderPriorityQueue: JobSettingsDto.fromJson(json[r'galleryDownloaderPriorityQueue'])!,
+        galleryDownloaderQueue: JobSettingsDto.fromJson(json[r'galleryDownloaderQueue'])!,
         library_: JobSettingsDto.fromJson(json[r'library'])!,
         locationDataScrappingWeb: JobSettingsDto.fromJson(json[r'locationDataScrappingWeb'])!,
         metadataExtraction: JobSettingsDto.fromJson(json[r'metadataExtraction'])!,
@@ -200,6 +214,8 @@ class SystemConfigJobDto {
   static const requiredKeys = <String>{
     'backgroundTask',
     'faceDetection',
+    'galleryDownloaderPriorityQueue',
+    'galleryDownloaderQueue',
     'library',
     'locationDataScrappingWeb',
     'metadataExtraction',

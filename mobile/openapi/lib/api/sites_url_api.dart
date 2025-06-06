@@ -111,6 +111,46 @@ class SitesURLApi {
     return null;
   }
 
+  /// Performs an HTTP 'PUT /sites-url/download/{id}' operation and returns the [Response].
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  Future<Response> downloadSitesUrlWithHttpInfo(String id,) async {
+    // ignore: prefer_const_declarations
+    final apiPath = r'/sites-url/download/{id}'
+      .replaceAll('{id}', id);
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      apiPath,
+      'PUT',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+    );
+  }
+
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  Future<void> downloadSitesUrl(String id,) async {
+    final response = await downloadSitesUrlWithHttpInfo(id,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+  }
+
   /// Performs an HTTP 'GET /sites-url' operation and returns the [Response].
   Future<Response> getAllSitesUrlWithHttpInfo() async {
     // ignore: prefer_const_declarations
@@ -250,6 +290,86 @@ class SitesURLApi {
     
     }
     return null;
+  }
+
+  /// Performs an HTTP 'POST /sites-url/start-download' operation and returns the [Response].
+  /// Parameters:
+  ///
+  /// * [num] preference (required):
+  Future<Response> startLoopWithHttpInfo(num preference,) async {
+    // ignore: prefer_const_declarations
+    final apiPath = r'/sites-url/start-download'
+      .replaceAll('{preference}', preference.toString());
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      apiPath,
+      'POST',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+    );
+  }
+
+  /// Parameters:
+  ///
+  /// * [num] preference (required):
+  Future<void> startLoop(num preference,) async {
+    final response = await startLoopWithHttpInfo(preference,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+  }
+
+  /// Performs an HTTP 'POST /sites-url/stop-download' operation and returns the [Response].
+  /// Parameters:
+  ///
+  /// * [num] preference (required):
+  Future<Response> stopLoopWithHttpInfo(num preference,) async {
+    // ignore: prefer_const_declarations
+    final apiPath = r'/sites-url/stop-download'
+      .replaceAll('{preference}', preference.toString());
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      apiPath,
+      'POST',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+    );
+  }
+
+  /// Parameters:
+  ///
+  /// * [num] preference (required):
+  Future<void> stopLoop(num preference,) async {
+    final response = await stopLoopWithHttpInfo(preference,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
   }
 
   /// Performs an HTTP 'PUT /sites-url/{id}' operation and returns the [Response].

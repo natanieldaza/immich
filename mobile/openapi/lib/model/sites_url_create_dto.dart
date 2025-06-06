@@ -15,6 +15,7 @@ class SitesUrlCreateDto {
   SitesUrlCreateDto({
     required this.createdAt,
     this.description,
+    this.posts = 0,
     this.preference = 0,
     required this.url,
     this.visitedAt,
@@ -23,6 +24,8 @@ class SitesUrlCreateDto {
   DateTime? createdAt;
 
   String? description;
+
+  num posts;
 
   num preference;
 
@@ -34,6 +37,7 @@ class SitesUrlCreateDto {
   bool operator ==(Object other) => identical(this, other) || other is SitesUrlCreateDto &&
     other.createdAt == createdAt &&
     other.description == description &&
+    other.posts == posts &&
     other.preference == preference &&
     other.url == url &&
     other.visitedAt == visitedAt;
@@ -43,12 +47,13 @@ class SitesUrlCreateDto {
     // ignore: unnecessary_parenthesis
     (createdAt == null ? 0 : createdAt!.hashCode) +
     (description == null ? 0 : description!.hashCode) +
+    (posts.hashCode) +
     (preference.hashCode) +
     (url.hashCode) +
     (visitedAt == null ? 0 : visitedAt!.hashCode);
 
   @override
-  String toString() => 'SitesUrlCreateDto[createdAt=$createdAt, description=$description, preference=$preference, url=$url, visitedAt=$visitedAt]';
+  String toString() => 'SitesUrlCreateDto[createdAt=$createdAt, description=$description, posts=$posts, preference=$preference, url=$url, visitedAt=$visitedAt]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -62,6 +67,7 @@ class SitesUrlCreateDto {
     } else {
     //  json[r'description'] = null;
     }
+      json[r'posts'] = this.posts;
       json[r'preference'] = this.preference;
       json[r'url'] = this.url;
     if (this.visitedAt != null) {
@@ -83,6 +89,7 @@ class SitesUrlCreateDto {
       return SitesUrlCreateDto(
         createdAt: mapDateTime(json, r'createdAt', r''),
         description: mapValueOfType<String>(json, r'description'),
+        posts: num.parse('${json[r'posts']}'),
         preference: num.parse('${json[r'preference']}'),
         url: mapValueOfType<String>(json, r'url')!,
         visitedAt: mapDateTime(json, r'visitedAt', r''),

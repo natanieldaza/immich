@@ -250,10 +250,10 @@ export class JobService extends BaseService {
       const status = await this.jobRepository.run(job);
       const jobMetric = `immich.jobs.${job.name.replaceAll('-', '_')}.${status}`;
       this.telemetryRepository.jobs.addToCounter(jobMetric, 1);
-      if (status === JobStatus.SUCCESS || status == JobStatus.SKIPPED) {
+      const successfulStatuses = new Set([JobStatus.SUCCESS, JobStatus.SKIPPED]);
+      if (successfulStatuses.has(status)) {
         await this.onDone(job);
-      }
-      else {
+      } else {
         await this.handleJob(job);
       }
     } catch (error: Error | any) {
@@ -332,15 +332,6 @@ export class JobService extends BaseService {
           this.logger.debug(`All sidecar files processed for ${item.data.directoryId} - queueing sidecar write `);
           await this.jobRepository.queue({ name: JobName.PERSON_SIDECAR_WRITE, data: { directoryId: item.data.directoryId } });
         }
-
-       /* if (item.data.source === 'sidecar-write') {
-          const [asset] = await this.assetRepository.getByIdsWithAllRelations([item.data.id]);
-          if (asset) {
-            this.eventRepository.clientSend('on_asset_update', asset.ownerId, mapAsset(asset));
-          }
-        }
-        await this.jobRepository.queue({ name: JobName.STORAGE_TEMPLATE_MIGRATION_SINGLE, data: item.data });*/
-
         break;
       }
       case JobName.STORAGE_TEMPLATE_MIGRATION_SINGLE: {

@@ -95,12 +95,28 @@ export class SitesUrlController {
   async downloadSitesUrl(
     @Auth() auth: AuthDto,
     @Param('id') id: string,
-  ): Promise<SitesUrlResponseDto> {
-    const updatedSitesUrl = await this.service.dowload(auth, id);
-    if (!updatedSitesUrl) {
-      throw new NotFoundException('Site URL not found');
-    }
-    return updatedSitesUrl;
+  ) {
+     await this.service.dowload(auth, id); 
+  }
+
+  @Post('start-download')
+  @Authenticated({ permission: Permission.URL_UPDATE })
+  async startLoop(
+    @Auth() auth: AuthDto,
+    @Param('preference') preference: number,
+  ): Promise<{ status: string }> {
+   await this.service.startDownload(auth,preference);
+    return { status: 'Loop started' };
+  }
+
+  @Post('stop-download')
+  @Authenticated({ permission: Permission.URL_UPDATE })
+  async stopLoop(
+    @Auth() auth: AuthDto,
+    @Param('preference') preference: number,
+  ): Promise<{ status: string; }> {
+    await this.service.stopDownload(auth,preference);
+    return { status: 'Loop stopped' };
   }
 }
 

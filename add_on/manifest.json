@@ -7,11 +7,13 @@
     "contextMenus",
     "tabs",
     "storage",
+    "notifications",
     "http://localhost:3000/*",
     "https://www.instagram.com/*"
   ],
   "background": {
-    "scripts": ["background.js"]
+    "scripts": ["background.js"],
+    "persistent": false
   },
   "content_scripts": [
     {
@@ -44,6 +46,9 @@
   },
   "browser_action": {
     "default_title": "SitesUrl Saver"
+  },
+  "icons": {
+    "128": "icons/icon128.png"
   },
   "options_ui": {
     "page": "options.html",

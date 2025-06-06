@@ -462,6 +462,8 @@ export enum QueueName {
   SOCIAL_MEDIA_DATA_SCRAPPING_WEB = 'socialMediaDataScrappingWeb',
   LOCATION_DATA_SCRAPPING_WEB = 'locationDataScrappingWeb',
   PERSON_SIDECAR = 'personSidecar',
+  GALLERY_DOWNLOADER_QUEUE = 'galleryDownloaderQueue',
+  GALLERY_DOWNLOADER_PRIORITY_QUEUE = 'galleryDownloaderPriorityQueue'
 }
 
 export enum JobName {
@@ -580,6 +582,12 @@ export enum JobName {
 
   QUEUE_LOCATION_DATA_SCRAPPING_WEB = 'queue-location-data-scrapping-web',
   LOCATION_DATA_SCRAPPING_WEB = 'location-data-scrapping-web',
+
+  //GALLERY DOWNLOADER
+  QUEUE_GALLERY_DOWNLOADER = 'queue-gallery-downloader',
+  GALLERY_DOWNLOADER = 'gallery-downloader',
+  QUEUE_GALLERY_DOWNLOADER_PRIORITY = 'queue-gallery-downloader-priority',
+  GALLERY_DOWNLOADER_PRIORITY = 'gallery-downloader-priority',
 }
 
 export enum JobCommand {
