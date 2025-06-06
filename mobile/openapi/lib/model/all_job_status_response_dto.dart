@@ -18,6 +18,8 @@ class AllJobStatusResponseDto {
     required this.duplicateDetection,
     required this.faceDetection,
     required this.facialRecognition,
+    required this.galleryDownloaderPriorityQueue,
+    required this.galleryDownloaderQueue,
     required this.library_,
     required this.locationDataScrappingWeb,
     required this.metadataExtraction,
@@ -44,6 +46,10 @@ class AllJobStatusResponseDto {
   JobStatusDto faceDetection;
 
   JobStatusDto facialRecognition;
+
+  JobStatusDto galleryDownloaderPriorityQueue;
+
+  JobStatusDto galleryDownloaderQueue;
 
   JobStatusDto library_;
 
@@ -82,6 +88,8 @@ class AllJobStatusResponseDto {
     other.duplicateDetection == duplicateDetection &&
     other.faceDetection == faceDetection &&
     other.facialRecognition == facialRecognition &&
+    other.galleryDownloaderPriorityQueue == galleryDownloaderPriorityQueue &&
+    other.galleryDownloaderQueue == galleryDownloaderQueue &&
     other.library_ == library_ &&
     other.locationDataScrappingWeb == locationDataScrappingWeb &&
     other.metadataExtraction == metadataExtraction &&
@@ -106,6 +114,8 @@ class AllJobStatusResponseDto {
     (duplicateDetection.hashCode) +
     (faceDetection.hashCode) +
     (facialRecognition.hashCode) +
+    (galleryDownloaderPriorityQueue.hashCode) +
+    (galleryDownloaderQueue.hashCode) +
     (library_.hashCode) +
     (locationDataScrappingWeb.hashCode) +
     (metadataExtraction.hashCode) +
@@ -123,7 +133,7 @@ class AllJobStatusResponseDto {
     (videoConversion.hashCode);
 
   @override
-  String toString() => 'AllJobStatusResponseDto[backgroundTask=$backgroundTask, backupDatabase=$backupDatabase, duplicateDetection=$duplicateDetection, faceDetection=$faceDetection, facialRecognition=$facialRecognition, library_=$library_, locationDataScrappingWeb=$locationDataScrappingWeb, metadataExtraction=$metadataExtraction, migration=$migration, notifications=$notifications, personDataScrapping=$personDataScrapping, personSidecar=$personSidecar, search=$search, sidecar=$sidecar, smartSearch=$smartSearch, socialMediaDataScrapping=$socialMediaDataScrapping, socialMediaDataScrappingWeb=$socialMediaDataScrappingWeb, storageTemplateMigration=$storageTemplateMigration, thumbnailGeneration=$thumbnailGeneration, videoConversion=$videoConversion]';
+  String toString() => 'AllJobStatusResponseDto[backgroundTask=$backgroundTask, backupDatabase=$backupDatabase, duplicateDetection=$duplicateDetection, faceDetection=$faceDetection, facialRecognition=$facialRecognition, galleryDownloaderPriorityQueue=$galleryDownloaderPriorityQueue, galleryDownloaderQueue=$galleryDownloaderQueue, library_=$library_, locationDataScrappingWeb=$locationDataScrappingWeb, metadataExtraction=$metadataExtraction, migration=$migration, notifications=$notifications, personDataScrapping=$personDataScrapping, personSidecar=$personSidecar, search=$search, sidecar=$sidecar, smartSearch=$smartSearch, socialMediaDataScrapping=$socialMediaDataScrapping, socialMediaDataScrappingWeb=$socialMediaDataScrappingWeb, storageTemplateMigration=$storageTemplateMigration, thumbnailGeneration=$thumbnailGeneration, videoConversion=$videoConversion]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -132,6 +142,8 @@ class AllJobStatusResponseDto {
       json[r'duplicateDetection'] = this.duplicateDetection;
       json[r'faceDetection'] = this.faceDetection;
       json[r'facialRecognition'] = this.facialRecognition;
+      json[r'galleryDownloaderPriorityQueue'] = this.galleryDownloaderPriorityQueue;
+      json[r'galleryDownloaderQueue'] = this.galleryDownloaderQueue;
       json[r'library'] = this.library_;
       json[r'locationDataScrappingWeb'] = this.locationDataScrappingWeb;
       json[r'metadataExtraction'] = this.metadataExtraction;
@@ -164,6 +176,8 @@ class AllJobStatusResponseDto {
         duplicateDetection: JobStatusDto.fromJson(json[r'duplicateDetection'])!,
         faceDetection: JobStatusDto.fromJson(json[r'faceDetection'])!,
         facialRecognition: JobStatusDto.fromJson(json[r'facialRecognition'])!,
+        galleryDownloaderPriorityQueue: JobStatusDto.fromJson(json[r'galleryDownloaderPriorityQueue'])!,
+        galleryDownloaderQueue: JobStatusDto.fromJson(json[r'galleryDownloaderQueue'])!,
         library_: JobStatusDto.fromJson(json[r'library'])!,
         locationDataScrappingWeb: JobStatusDto.fromJson(json[r'locationDataScrappingWeb'])!,
         metadataExtraction: JobStatusDto.fromJson(json[r'metadataExtraction'])!,
@@ -231,6 +245,8 @@ class AllJobStatusResponseDto {
     'duplicateDetection',
     'faceDetection',
     'facialRecognition',
+    'galleryDownloaderPriorityQueue',
+    'galleryDownloaderQueue',
     'library',
     'locationDataScrappingWeb',
     'metadataExtraction',

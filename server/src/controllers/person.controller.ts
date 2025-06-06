@@ -17,6 +17,7 @@ import {
 import { Permission } from 'src/enum';
 import { Auth, Authenticated, FileResponse } from 'src/middleware/auth.guard';
 import { LoggingRepository } from 'src/repositories/logging.repository';
+import { MetadataService } from 'src/services/metadata.service';
 import { PersonService } from 'src/services/person.service';
 import { sendFile } from 'src/utils/file';
 import { UUIDParamDto } from 'src/validation';
@@ -26,6 +27,7 @@ import { UUIDParamDto } from 'src/validation';
 export class PersonController {
   constructor(
     private service: PersonService,
+    private metadataService: MetadataService,
     private logger: LoggingRepository,
   ) {
     this.logger.setContext(PersonController.name);
@@ -103,4 +105,13 @@ export class PersonController {
   ): Promise<BulkIdResponseDto[]> {
     return this.service.mergePerson(auth, id, dto);
   }
+
+  @Get('countries')
+  @Authenticated({ permission: Permission.PERSON_READ })
+  getCountries(@Auth() auth: AuthDto, @Param() { id }: { id: string }): Promise<{ code: string; name: string }[]> {
+    
+    return Promise.resolve(this.metadataService.getCountries(auth, id));
+  }
+    
+  
 }

@@ -43,6 +43,8 @@ class JobName {
   static const socialMediaDataScrappingWeb = JobName._(r'socialMediaDataScrappingWeb');
   static const locationDataScrappingWeb = JobName._(r'locationDataScrappingWeb');
   static const personSidecar = JobName._(r'personSidecar');
+  static const galleryDownloaderQueue = JobName._(r'galleryDownloaderQueue');
+  static const galleryDownloaderPriorityQueue = JobName._(r'galleryDownloaderPriorityQueue');
 
   /// List of all possible values in this [enum][JobName].
   static const values = <JobName>[
@@ -66,6 +68,8 @@ class JobName {
     socialMediaDataScrappingWeb,
     locationDataScrappingWeb,
     personSidecar,
+    galleryDownloaderQueue,
+    galleryDownloaderPriorityQueue,
   ];
 
   static JobName? fromJson(dynamic value) => JobNameTypeTransformer().decode(value);
@@ -124,6 +128,8 @@ class JobNameTypeTransformer {
         case r'socialMediaDataScrappingWeb': return JobName.socialMediaDataScrappingWeb;
         case r'locationDataScrappingWeb': return JobName.locationDataScrappingWeb;
         case r'personSidecar': return JobName.personSidecar;
+        case r'galleryDownloaderQueue': return JobName.galleryDownloaderQueue;
+        case r'galleryDownloaderPriorityQueue': return JobName.galleryDownloaderPriorityQueue;
         default:
           if (!allowNull) {
             throw ArgumentError('Unknown enum value to decode: $data');

@@ -4745,6 +4745,31 @@
         ]
       }
     },
+    "/people/countries": {
+      "get": {
+        "operationId": "getCountries",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "tags": [
+          "People"
+        ]
+      }
+    },
     "/people/{id}": {
       "get": {
         "operationId": "getPerson",
@@ -6512,13 +6537,74 @@
         ],
         "responses": {
           "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SitesUrlResponseDto"
-                }
-              }
-            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "tags": [
+          "Sites URL"
+        ]
+      }
+    },
+    "/sites-url/start-download": {
+      "post": {
+        "operationId": "startLoop",
+        "parameters": [
+          {
+            "name": "preference",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "tags": [
+          "Sites URL"
+        ]
+      }
+    },
+    "/sites-url/stop-download": {
+      "post": {
+        "operationId": "stopLoop",
+        "parameters": [
+          {
+            "name": "preference",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
             "description": ""
           }
         },
@@ -9483,6 +9569,12 @@
           "facialRecognition": {
             "$ref": "#/components/schemas/JobStatusDto"
           },
+          "galleryDownloaderPriorityQueue": {
+            "$ref": "#/components/schemas/JobStatusDto"
+          },
+          "galleryDownloaderQueue": {
+            "$ref": "#/components/schemas/JobStatusDto"
+          },
           "library": {
             "$ref": "#/components/schemas/JobStatusDto"
           },
@@ -9535,6 +9627,8 @@
           "duplicateDetection",
           "faceDetection",
           "facialRecognition",
+          "galleryDownloaderPriorityQueue",
+          "galleryDownloaderQueue",
           "library",
           "locationDataScrappingWeb",
           "metadataExtraction",
@@ -11226,7 +11320,9 @@
           "socialMediaDataScrapping",
           "socialMediaDataScrappingWeb",
           "locationDataScrappingWeb",
-          "personSidecar"
+          "personSidecar",
+          "galleryDownloaderQueue",
+          "galleryDownloaderPriorityQueue"
         ],
         "type": "string"
       },
@@ -15272,6 +15368,12 @@
           "faceDetection": {
             "$ref": "#/components/schemas/JobSettingsDto"
           },
+          "galleryDownloaderPriorityQueue": {
+            "$ref": "#/components/schemas/JobSettingsDto"
+          },
+          "galleryDownloaderQueue": {
+            "$ref": "#/components/schemas/JobSettingsDto"
+          },
           "library": {
             "$ref": "#/components/schemas/JobSettingsDto"
           },
@@ -15318,6 +15420,8 @@
         "required": [
           "backgroundTask",
           "faceDetection",
+          "galleryDownloaderPriorityQueue",
+          "galleryDownloaderQueue",
           "library",
           "locationDataScrappingWeb",
           "metadataExtraction",

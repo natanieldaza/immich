@@ -114,5 +114,10 @@ export class AllJobStatusResponseDto implements Record<QueueName, JobStatusDto> 
 
   @ApiProperty({ type: JobStatusDto })
   [QueueName.PERSON_SIDECAR]!: JobStatusDto;
-  
+
+  @ApiProperty({ type: JobStatusDto })
+  [QueueName.GALLERY_DOWNLOADER_QUEUE]!: JobStatusDto;
+
+  @ApiProperty({ type: JobStatusDto })
+  [QueueName.GALLERY_DOWNLOADER_PRIORITY_QUEUE]!: JobStatusDto;
 }

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import CircleIconButton from '$lib/components/elements/buttons/circle-icon-button.svelte';
   import { type OnMove, moveAssets } from '$lib/utils/actions';
+  import { IconButton } from '@immich/ui';
   import { mdiDeleteForeverOutline, mdiDeleteOutline, mdiTimerSand } from '@mdi/js';
   import { t } from 'svelte-i18n';
   import MenuOption from '../../shared-components/context-menu/menu-option.svelte';
@@ -41,9 +41,9 @@
 {#if menuItem}
   <MenuOption text={label} icon={mdiDeleteOutline} onClick={handleMoveClick} />
 {:else if loading}
-  <CircleIconButton title={$t('loading')} icon={mdiTimerSand} onclick={() => {}} />
+  <IconButton title={$t('loading')} icon={mdiTimerSand} onclick={() => {}} />
 {:else}
-  <CircleIconButton title={label} icon={mdiDeleteForeverOutline} onclick={handleMoveClick} />
+  <IconButton title={label} icon={mdiDeleteForeverOutline} onclick={handleMoveClick} />
 {/if}
 
 {#if isShowConfirmation}

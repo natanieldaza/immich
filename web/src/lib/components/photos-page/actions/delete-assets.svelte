@@ -1,12 +1,16 @@
 <script lang="ts">
   import { featureFlags } from '$lib/stores/server-config.store';
+<<<<<<< HEAD
   import { type OnDelete, type OnUndoDelete, deleteAssets } from '$lib/utils/actions';
+=======
+  import { type OnDelete, deleteAssets } from '$lib/utils/actions';
+  import { IconButton } from '@immich/ui';
+>>>>>>> 15c847684 (added downloading buutons and fixed move, directory and people pages)
   import { mdiDeleteForeverOutline, mdiDeleteOutline, mdiTimerSand } from '@mdi/js';
   import { t } from 'svelte-i18n';
   import MenuOption from '../../shared-components/context-menu/menu-option.svelte';
   import { getAssetControlContext } from '../asset-select-control-bar.svelte';
   import DeleteAssetDialog from '../delete-asset-dialog.svelte';
-  import { IconButton } from '@immich/ui';
 
   interface Props {
     onAssetDelete: OnDelete;

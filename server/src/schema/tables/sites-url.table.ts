@@ -23,7 +23,7 @@ export class SitesUrlTable {
   visitedAt!: Date | null;
   // The visitedAt column is a timestamp with time zone
 
-  @Column({ type: 'timestamp with time zone', nullable: true, default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ type: 'timestamp with time zone', nullable: true, default: null })
   runAt!: Date | null;
 
   @Column({type:'boolean', nullable: true})
