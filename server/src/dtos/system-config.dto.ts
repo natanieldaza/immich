@@ -260,6 +260,18 @@ class SystemConfigJobDto implements Record<ConcurrentQueueName, JobSettingsDto> 
   @IsObject()
   @Type(() => JobSettingsDto)
   [QueueName.PERSON_SIDECAR]!: JobSettingsDto;
+
+  @ApiProperty({ type: JobSettingsDto })
+  @ValidateNested()
+  @IsObject()
+  @Type(() => JobSettingsDto)
+  [QueueName.GALLERY_DOWNLOADER_QUEUE]!: JobSettingsDto;
+
+  @ApiProperty({ type: JobSettingsDto })
+  @ValidateNested()
+  @IsObject()
+  @Type(() => JobSettingsDto)
+  [QueueName.GALLERY_DOWNLOADER_PRIORITY_QUEUE]!: JobSettingsDto;
 }
 
 class SystemConfigLibraryScanDto {

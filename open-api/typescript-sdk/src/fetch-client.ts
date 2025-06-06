@@ -710,6 +710,8 @@ export type AllJobStatusResponseDto = {
     duplicateDetection: JobStatusDto;
     faceDetection: JobStatusDto;
     facialRecognition: JobStatusDto;
+    galleryDownloaderPriorityQueue: JobStatusDto;
+    galleryDownloaderQueue: JobStatusDto;
     library: JobStatusDto;
     locationDataScrappingWeb: JobStatusDto;
     metadataExtraction: JobStatusDto;
@@ -1427,6 +1429,8 @@ export type JobSettingsDto = {
 export type SystemConfigJobDto = {
     backgroundTask: JobSettingsDto;
     faceDetection: JobSettingsDto;
+    galleryDownloaderPriorityQueue: JobSettingsDto;
+    galleryDownloaderQueue: JobSettingsDto;
     library: JobSettingsDto;
     locationDataScrappingWeb: JobSettingsDto;
     metadataExtraction: JobSettingsDto;
@@ -2881,6 +2885,11 @@ export function updatePeople({ peopleUpdateDto }: {
         body: peopleUpdateDto
     })));
 }
+export function getCountries(opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchText("/people/countries", {
+        ...opts
+    }));
+}
 export function getPerson({ id }: {
     id: string;
 }, opts?: Oazapfts.RequestOpts) {
@@ -3342,12 +3351,25 @@ export function createSitesUrl({ sitesUrlCreateDto }: {
 export function downloadSitesUrl({ id }: {
     id: string;
 }, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: SitesUrlResponseDto;
-    }>(`/sites-url/download/${encodeURIComponent(id)}`, {
+    return oazapfts.ok(oazapfts.fetchText(`/sites-url/download/${encodeURIComponent(id)}`, {
         ...opts,
         method: "PUT"
+    }));
+}
+export function startLoop({ preference }: {
+    preference: number;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchText("/sites-url/start-download", {
+        ...opts,
+        method: "POST"
+    }));
+}
+export function stopLoop({ preference }: {
+    preference: number;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchText("/sites-url/stop-download", {
+        ...opts,
+        method: "POST"
     }));
 }
 export function getSitesUrlByUrl({ url }: {
@@ -4242,7 +4264,9 @@ export enum JobName {
     SocialMediaDataScrapping = "socialMediaDataScrapping",
     SocialMediaDataScrappingWeb = "socialMediaDataScrappingWeb",
     LocationDataScrappingWeb = "locationDataScrappingWeb",
-    PersonSidecar = "personSidecar"
+    PersonSidecar = "personSidecar",
+    GalleryDownloaderQueue = "galleryDownloaderQueue",
+    GalleryDownloaderPriorityQueue = "galleryDownloaderPriorityQueue"
 }
 export enum JobCommand {
     Start = "start",

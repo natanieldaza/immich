@@ -146,6 +146,39 @@ class PeopleApi {
     return null;
   }
 
+  /// Performs an HTTP 'GET /people/countries' operation and returns the [Response].
+  Future<Response> getCountriesWithHttpInfo() async {
+    // ignore: prefer_const_declarations
+    final apiPath = r'/people/countries';
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      apiPath,
+      'GET',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+    );
+  }
+
+  Future<void> getCountries() async {
+    final response = await getCountriesWithHttpInfo();
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+  }
+
   /// Performs an HTTP 'GET /people/{id}' operation and returns the [Response].
   /// Parameters:
   ///

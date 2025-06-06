@@ -215,6 +215,8 @@ export const defaults = Object.freeze<SystemConfig>({
     [QueueName.SOCIAL_MEDIA_DATA_SCRAPPING_WEB]: { concurrency: 1 },
     [QueueName.LOCATION_DATA_SCRAPPING_WEB]: { concurrency: 1 },
     [QueueName.PERSON_SIDECAR]: { concurrency: 1 },
+    [QueueName.GALLERY_DOWNLOADER_QUEUE]: {concurrency:1},
+    [QueueName.GALLERY_DOWNLOADER_PRIORITY_QUEUE]: {concurrency:1}
   },
   logging: {
     enabled: true,

@@ -140,6 +140,8 @@ export const placesViewSettings = persisted<PlacesViewSettings>('places-view-set
 
 export const showDeleteModal = persisted<boolean>('delete-confirm-dialog', true, {});
 
+export const showMoveModal = persisted<boolean>('move-confirm-dialog', true, {});
+
 export const alwaysLoadOriginalFile = persisted<boolean>('always-load-original-file', false, {});
 
 export const playVideoThumbnailOnHover = persisted<boolean>('play-video-thumbnail-on-hover', true, {});

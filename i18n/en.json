@@ -1745,6 +1745,8 @@
   "sidebar_display_description": "Display a link to the view in the sidebar",
   "sign_out": "Sign Out",
   "sign_up": "Sign up",
+  "sites_url_title": "Sites URL",
+  "sites_url_description": "Manage the URLs of the sites",
   "size": "Size",
   "skip_to_content": "Skip to content",
   "skip_to_folders": "Skip to folders",

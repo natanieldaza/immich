@@ -168,6 +168,7 @@ Class | Method | HTTP request | Description
 *PartnersApi* | [**updatePartner**](doc//PartnersApi.md#updatepartner) | **PUT** /partners/{id} | 
 *PeopleApi* | [**createPerson**](doc//PeopleApi.md#createperson) | **POST** /people | 
 *PeopleApi* | [**getAllPeople**](doc//PeopleApi.md#getallpeople) | **GET** /people | 
+*PeopleApi* | [**getCountries**](doc//PeopleApi.md#getcountries) | **GET** /people/countries | 
 *PeopleApi* | [**getPerson**](doc//PeopleApi.md#getperson) | **GET** /people/{id} | 
 *PeopleApi* | [**getPersonStatistics**](doc//PeopleApi.md#getpersonstatistics) | **GET** /people/{id}/statistics | 
 *PeopleApi* | [**getPersonThumbnail**](doc//PeopleApi.md#getpersonthumbnail) | **GET** /people/{id}/thumbnail | 
@@ -213,9 +214,12 @@ Class | Method | HTTP request | Description
 *SharedLinksApi* | [**updateSharedLink**](doc//SharedLinksApi.md#updatesharedlink) | **PATCH** /shared-links/{id} | 
 *SitesURLApi* | [**createSitesUrl**](doc//SitesURLApi.md#createsitesurl) | **POST** /sites-url | 
 *SitesURLApi* | [**deleteSitesUrl**](doc//SitesURLApi.md#deletesitesurl) | **DELETE** /sites-url/{id} | 
+*SitesURLApi* | [**downloadSitesUrl**](doc//SitesURLApi.md#downloadsitesurl) | **PUT** /sites-url/download/{id} | 
 *SitesURLApi* | [**getAllSitesUrl**](doc//SitesURLApi.md#getallsitesurl) | **GET** /sites-url | 
 *SitesURLApi* | [**getSitesUrlById**](doc//SitesURLApi.md#getsitesurlbyid) | **GET** /sites-url/{id} | 
 *SitesURLApi* | [**getSitesUrlByUrl**](doc//SitesURLApi.md#getsitesurlbyurl) | **GET** /sites-url/url | 
+*SitesURLApi* | [**startLoop**](doc//SitesURLApi.md#startloop) | **POST** /sites-url/start-download | 
+*SitesURLApi* | [**stopLoop**](doc//SitesURLApi.md#stoploop) | **POST** /sites-url/stop-download | 
 *SitesURLApi* | [**updateSitesUrl**](doc//SitesURLApi.md#updatesitesurl) | **PUT** /sites-url/{id} | 
 *SocialMediaApi* | [**createSocialMedia**](doc//SocialMediaApi.md#createsocialmedia) | **POST** /social-media | 
 *SocialMediaApi* | [**getAllSocialMedia**](doc//SocialMediaApi.md#getallsocialmedia) | **GET** /social-media | 
