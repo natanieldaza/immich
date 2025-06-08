@@ -216,15 +216,31 @@ export class StorageRepository {
     });
   }
 
+  /**
+   * Walks through the file system starting from the specified paths.
+   * Yields batches of file paths based on the provided options.
+   *
+   * @param walkOptions - Options for walking the file system.
+   * @returns An async generator yielding arrays of file paths.
+   */
   async *walk(walkOptions: WalkOptionsDto): AsyncGenerator<string[]> {
     const { pathsToCrawl, exclusionPatterns, includeHidden, typeFilter, take = 100, deepth = Infinity } = walkOptions;
-    if (pathsToCrawl.length === 0) {
-      async function* emptyGenerator() { }
-      return emptyGenerator();
+  
+    // 🔍 Filtrar rutas inaccesibles
+    const validPaths: string[] = [];
+    for (const path of pathsToCrawl) {
+      try {
+        await fs.access(path);
+        validPaths.push(path);
+      } catch (err) {
+        console.warn(`Skipping inaccessible path: ${path} (${err.message})`);
+      }
     }
-
-    const globbedPaths = pathsToCrawl.map((path) => this.asGlob(path, typeFilter));
-
+  
+    if (validPaths.length === 0) return;
+  
+    const globbedPaths = validPaths.map((path) => this.asGlob(path, typeFilter));
+  
     const stream = globStream(globbedPaths, {
       absolute: true,
       caseSensitiveMatch: false,
@@ -234,19 +250,24 @@ export class StorageRepository {
       onlyDirectories: typeFilter === 'directories',
       deep: deepth,
     });
-
+  
     let batch: string[] = [];
-    for await (const entry of stream) {
-      batch.push(entry.toString());
-
-      if (batch.length >= take) {
-        yield batch;
-        batch = [];
+  
+    try {
+      for await (const entry of stream) {
+        batch.push(entry.toString());
+        if (batch.length >= take) {
+          yield batch;
+          batch = [];
+        }
       }
-    }
-
-    if (batch.length > 0) {
-      yield batch;
+      if (batch.length > 0) {
+        yield batch;
+      }
+    } catch (err) {
+      this.logger.error(`Error during walk(): ${err.message}`);
+      // Puedes relanzar si quieres cortar toda la operación:
+      // throw err;
     }
   }
 
