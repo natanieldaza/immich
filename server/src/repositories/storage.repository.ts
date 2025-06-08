@@ -225,15 +225,16 @@ export class StorageRepository {
    */
   async *walk(walkOptions: WalkOptionsDto): AsyncGenerator<string[]> {
     const { pathsToCrawl, exclusionPatterns, includeHidden, typeFilter, take = 100, deepth = Infinity } = walkOptions;
-  
+    this.logger.debug(`Starting walk with options: ${JSON.stringify(walkOptions)}`);
     // 🔍 Filtrar rutas inaccesibles
     const validPaths: string[] = [];
     for (const path of pathsToCrawl) {
       try {
         await fs.access(path);
         validPaths.push(path);
-      } catch (err) {
-        console.warn(`Skipping inaccessible path: ${path} (${err.message})`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.warn(`Skipping inaccessible path: ${path} (${message})`);
       }
     }
   
@@ -264,10 +265,11 @@ export class StorageRepository {
       if (batch.length > 0) {
         yield batch;
       }
-    } catch (err) {
-      this.logger.error(`Error during walk(): ${err.message}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Error during walk(): ${message}`);
       // Puedes relanzar si quieres cortar toda la operación:
-      // throw err;
+      // throw error;
     }
   }
 
