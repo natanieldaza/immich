@@ -447,7 +447,7 @@ export class LibraryService extends BaseService {
   }
 
   async queuePostSyncJobs(assetIds: string[], directoryId: string) {
-    this.logger.debug(`Queuing sidecar discovery for ${assetIds.length} asset(s) for directory ${directoryId}`);
+    this.logger.verbose(`Queuing sidecar discovery for ${assetIds.length} asset(s) for directory ${directoryId}`);
     //Set or increment the pending counter in Redis
     await this.jobRepository.setPendingSidecarCount(directoryId, assetIds.length);
 
@@ -706,7 +706,7 @@ export class LibraryService extends BaseService {
           role: AlbumUserRole.EDITOR,
         }];
         const album = await this.albumRepository.create(createAlbumDto, assetIds, albumUsersDto);
-        this.logger.debug(`Created album ${album.id} for directory ${directory.id}`);
+        this.logger.verbose(`Created album ${album.id} for directory ${directory.id}`);
 
         if (album.id) {
           await this.directoryRepository.update(String(directory.id), { albumId: album.id });
@@ -726,7 +726,7 @@ export class LibraryService extends BaseService {
         ? `(${job.progressCounter} of ${job.totalAssets})`
         : `(${job.progressCounter} done so far)`;
 
-    this.logger.debug(`Imported ${assetIds.length} ${progressMessage} file(s) into library ${directory.libraryId}`);
+    this.logger.verbose(`Imported ${assetIds.length} ${progressMessage} file(s) into library ${directory.libraryId}`);
 
     await this.queuePostSyncJobs(assetIds, String(directory.id));
 
@@ -741,7 +741,7 @@ export class LibraryService extends BaseService {
       return JobStatus.SKIPPED;
     }
 
-    this.logger.debug(`Validating import paths for library ${library.id}...`);
+    this.logger.verbose(`Validating import paths for library ${library.id}...`);
 
     const validImportPaths: string[] = [];
 
@@ -776,9 +776,9 @@ export class LibraryService extends BaseService {
 
     for await (const pathBatch of directoriesOnDisk) {
       crawlCount += pathBatch.length;
-      this.logger.debug(`Found ${pathBatch.length} directory(ies) in library ${library.id}, paths: ${pathBatch.join(', ')}`);
+      this.logger.debug(`Found ${pathBatch.length} directory(ies) in library ${library.id}}`);
       const directories = await this.directoryRepository.filterNewExternalDirectoryPaths(library.id, pathBatch);
-      this.logger.debug(`Filtered out ${directories.length} new directory(ies) for import : ${directories}`);
+      this.logger.debug(`Filtered out ${directories.length} new directory(ies) for import`);
 
       if (directories.length > 0) {
         importCount += directories.length;
@@ -1008,7 +1008,7 @@ export class LibraryService extends BaseService {
     }
     this.logger.verbose(`Updating ${assetIdsToOffline.length} asset(s) to offline, ${trashedAssetIdsToOffline.length} trashed asset(s) to offline, ${assetIdsToOnline.length} asset(s) to online, ${trashedAssetIdsToOnline.length} trashed asset(s) to online in library ${job.libraryId}`);
     if (assetIdsToUpdate.length > 0) {
-      this.logger.debug(`Sync Assets Updating ${assetIdsToUpdate.length} asset(s) in library ${job.libraryId} and directory ${job.directoryId}`);
+      this.logger.verbose(`Sync Assets Updating ${assetIdsToUpdate.length} asset(s) in library ${job.libraryId} and directory ${job.directoryId}`);
 
       promises.push(this.queuePostSyncJobs(assetIdsToUpdate, String(job.directoryId)));
     }
@@ -1017,7 +1017,7 @@ export class LibraryService extends BaseService {
 
     const remainingCount = assets.length - assetIdsToOffline.length - assetIdsToUpdate.length - assetIdsToOnline.length;
     const cumulativePercentage = ((100 * job.progressCounter) / job.totalAssets).toFixed(1);
-    this.logger.debug(
+    this.logger.verbose(
       `Checked existing asset(s): ${assetIdsToOffline.length + trashedAssetIdsToOffline.length} offlined, ${assetIdsToOnline.length + trashedAssetIdsToOnline.length} onlined, ${assetIdsToUpdate.length} updated, ${remainingCount} unchanged of current batch of ${assets.length} (Total progress: ${job.progressCounter} of ${job.totalAssets}, ${cumulativePercentage} %) in library ${job.libraryId}.`,
     );
 

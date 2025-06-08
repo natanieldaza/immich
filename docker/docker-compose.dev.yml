@@ -34,7 +34,7 @@ services:
       - /usr/src/app/node_modules
       - /etc/localtime:/etc/localtime:ro
       - /media/yuri/SORT/SORTING:/mnt/media/SORTING
-      - /media/yuri/SORT/TEST:/mnt/media/TEST
+      - /media/yuri/HDD/Gallery_Downloader:/mnt/media/TEST
       - ${IMMICH_COOKIES_PATH}:/usr/src/app/cookies
       - ${GALLERY_DL_CONFIG_PATH}:/etc/gallery-dl.conf:ro
       - ${DOWNLOAD_FOLDER}:/usr/src/app/downloads

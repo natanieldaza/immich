@@ -100,7 +100,7 @@ export class JobService extends BaseService {
   }
   
   async handleCommand(queueName: QueueName, dto: JobCommandDto): Promise<JobStatusDto> {
-    this.logger.debug(`Handling command: queue=${queueName},command=${dto.command},force=${dto.force}`);
+    this.logger.verbose(`Handling command: queue=${queueName},command=${dto.command},force=${dto.force}`);
 
     switch (dto.command) {
       case JobCommand.START: {
@@ -160,7 +160,7 @@ export class JobService extends BaseService {
     if (isActive) {
       throw new BadRequestException(`Job is already running`);
     }
-    this.logger.debug(`start Starting job: ${name}`);
+    this.logger.verbose(`start Starting job: ${name}`);
     this.telemetryRepository.jobs.addToCounter(`immich.queues.${snakeCase(name)}.started`, 1);
 
     switch (name) {
@@ -297,7 +297,7 @@ export class JobService extends BaseService {
         
         await this.jobRepository.decrementPendingSidecarCount(String(item.data.directoryId));
         if (await this.jobRepository.getPendingSidecarCount(String(item.data.directoryId)) === 0) {
-          this.logger.debug(`handleJobError All sidecar files processed for ${item.data.directoryId}`);
+          this.logger.verbose(`handleJobError All sidecar files processed for ${item.data.directoryId}`);
           await this.jobRepository.queue({ name: JobName.PERSON_SIDECAR_WRITE, data: { directoryId: item.data.directoryId } });
 
         }
@@ -329,16 +329,17 @@ export class JobService extends BaseService {
         await this.jobRepository.decrementPendingSidecarCount(String(item.data.directoryId));
         const itemsLeft = await this.jobRepository.getPendingSidecarCount(String(item.data.directoryId));
         if (itemsLeft <= 0) {
-          this.logger.debug(`All sidecar files processed for ${item.data.directoryId} - queueing sidecar write `);
+          this.logger.verbose(`All sidecar files processed for ${item.data.directoryId} - queueing sidecar write `);
           await this.jobRepository.queue({ name: JobName.PERSON_SIDECAR_WRITE, data: { directoryId: item.data.directoryId } });
         }
         break;
       }
       case JobName.STORAGE_TEMPLATE_MIGRATION_SINGLE: {
-        if (item.data.source === 'upload' || item.data.source === 'copy') {
+        break;
+        /*if (item.data.source === 'upload' || item.data.source === 'copy') {
           await this.jobRepository.queue({ name: JobName.GENERATE_THUMBNAILS, data: item.data });
         }
-        break;
+        break;*/
       }
 
       case JobName.GENERATE_PERSON_THUMBNAIL: {
