@@ -136,7 +136,7 @@ export class PersonService extends BaseService {
   }
 
   async createNewFeaturePhoto(changeFeaturePhoto: string[]) {
-    this.logger.debug(
+    this.logger.verbose(
       `Changing feature photos for ${changeFeaturePhoto.length} ${changeFeaturePhoto.length > 1 ? 'people' : 'person'}`,
     );
 
@@ -200,7 +200,7 @@ export class PersonService extends BaseService {
 
   async update(auth: AuthDto, id: string, dto: PersonUpdateDto): Promise<PersonResponseDto> {
     await this.requireAccess({ auth, permission: Permission.PERSON_UPDATE, ids: [id] });
-    this.logger.debug(`Updating person ${id} with ${JSON.stringify(dto)}`);
+    this.logger.verbose(`Updating person ${id} with ${JSON.stringify(dto)}`);
     const { name, birthDate, age, isHidden, featureFaceAssetId: assetId, isFavorite, color, description, country, city, height } = dto;
         // TODO: set by faceId directly
     let faceId: string | undefined = undefined;
@@ -312,7 +312,7 @@ export class PersonService extends BaseService {
           name: JobName.PERSON_SIDECAR_WRITE,
           data: { directoryId: key },
         });
-        this.logger.debug(`Queued job for person ${key} with ID ${personId}`);
+        this.logger.verbose(`Queued job for person ${key} with ID ${personId}`);
       } catch (error) {
         this.logger.error(`Failed to queue job for person ${key}: ${error instanceof Error ? error.message : String(error)}`);
       }
@@ -362,7 +362,7 @@ export class PersonService extends BaseService {
           updatedAt <= lastProcessedAt &&
           !force
         ) {
-          this.logger.debug(`Skipping person ${personId} — already processed.`);
+          this.logger.verbose(`Skipping person ${personId} — already processed.`);
           continue;
         }
 
@@ -371,7 +371,7 @@ export class PersonService extends BaseService {
             name: JobName.PERSON_DATA_SCRAPPING,
             data: { personId: id },
           });
-          this.logger.debug(`Queued job for person ${id}, ${personId} and sidecar ${sidecarPath}`);
+          this.logger.verbose(`Queued job for person ${id}, ${personId} and sidecar ${sidecarPath}`);
         } catch (error) {
           this.logger.error(`Failed to queue job for person ${personId}: ${error instanceof Error ? error.message : String(error)}`);
         }
@@ -834,7 +834,7 @@ export class PersonService extends BaseService {
   @OnJob({ name: JobName.PERSON_SIDECAR_WRITE, queue: QueueName.PERSON_SIDECAR })
   async handleSidecarWrite(job: JobOf<JobName.PERSON_SIDECAR_WRITE>): Promise<JobStatus> {
     const { directoryId } = job;
-    this.logger.debug(`Processing PERSON_SIDECAR_WRITE job for personId: ${directoryId}`);
+    this.logger.verbose(`Processing PERSON_SIDECAR_WRITE job for personId: ${directoryId}`);
 
     if (!directoryId) {
       this.logger.error(`No directoryId provided for PERSON_SIDECAR_WRITE job.`);
@@ -898,7 +898,7 @@ export class PersonService extends BaseService {
           mainPerson.ownerId,
           mainPerson.description ?? '',
         );
-        this.logger.debug(`Person entity: ${JSON.stringify(personEntity)}`);
+        this.logger.verbose(`Person entity: ${JSON.stringify(personEntity)}`);
         if (!personEntity) {
           this.logger.error(`Main person entity not found for personId: ${mainPersonId}`);
           return JobStatus.FAILED;
@@ -907,7 +907,7 @@ export class PersonService extends BaseService {
         mainPersonId = String(personEntity.id);
         ownerId = String(personEntity.ownerId);
       }
-      this.logger.debug(`Main personId: ${mainPersonId}`);
+      this.logger.verbose(`Main personId: ${mainPersonId}`);
 
       // Ensure the directory exists
       const directoryPath = path.dirname(filePath);
@@ -931,7 +931,7 @@ export class PersonService extends BaseService {
       }
 
       
-      this.logger.debug(`OwnerId: ${ownerId}`);
+      this.logger.verbose(`OwnerId: ${ownerId}`);
       for (const [key, personList] of peopleMap.entries()) {
         let category = key;
         if (!['main', 'owner', 'social_media'].includes(category)) {
@@ -946,7 +946,7 @@ export class PersonService extends BaseService {
           if (!existingPerson) {
             if (category === 'main') {
               newPerson.id = mainPersonId;
-              this.logger.debug(`Main personId: ${mainPersonId} with ownerId: ${ownerId} changed from ${newPerson.ownerId}`);
+              this.logger.verbose(`Main personId: ${mainPersonId} with ownerId: ${ownerId} changed from ${newPerson.ownerId}`);
               newPerson.ownerId = ownerId;
             }
             existingList.push(newPerson);
@@ -967,7 +967,7 @@ export class PersonService extends BaseService {
       const jsonData = Object.fromEntries(existingData);
       fs.writeFileSync(finalFilePath, JSON.stringify(jsonData, null, 2));
 
-      this.logger.debug(`PersonData.json updated successfully for personId: ${personId} at ${finalFilePath} (mainPersonId: ${mainPersonId})`);
+      this.logger.verbose(`PersonData.json updated successfully for personId: ${personId} at ${finalFilePath} (mainPersonId: ${mainPersonId})`);
 
       // Update the database entry with the last modified date
       const lastModified = new Date(fs.statSync(finalFilePath).mtime);
@@ -1059,7 +1059,7 @@ export class PersonService extends BaseService {
 
 
   private async processSidecar(id: string, force: boolean): Promise<JobStatus> {
-    this.logger.debug(`Processing sidecar for person ${id}`);
+    this.logger.verbose(`Processing sidecar for person ${id}`);
     const sidecar = await this.personRepository.getPersonSidecarByPersonId(id);
 
     this.logger.verbose(`Sidecar data: ${JSON.stringify(sidecar)}`);
@@ -1218,7 +1218,7 @@ export class PersonService extends BaseService {
       if (mainPersonId === relatedPersonId) continue;
       await this.personRelationshipRepository.createRelationship(mainPersonId, relatedPersonId, relationType);
     }
-    this.logger.debug(`Sidecar data processed successfully for personId: ${id}`);
+    this.logger.verbose(`Sidecar data processed successfully for personId: ${id}`);
     await this.updateSidecar(sidecarData, filePath);
     await this.personRepository.addOrUpdatePersonSidecar(
       mainPersonId,

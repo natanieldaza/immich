@@ -997,7 +997,7 @@ export class MetadataService extends BaseService {
       return;
     }
 
-    this.logger.debug(`Starting motion photo video extraction for asset ${asset.id}: ${asset.originalPath}`);
+    this.logger.verbose(`Starting motion photo video extraction for asset ${asset.id}: ${asset.originalPath}`);
 
     try {
       const position = stats.size - length - padding;
@@ -1090,7 +1090,7 @@ export class MetadataService extends BaseService {
         await this.jobRepository.queue({ name: JobName.VIDEO_CONVERSION, data: { id: motionAsset.id } });
       }
 
-      this.logger.debug(`Finished motion photo video extraction for asset ${asset.id}: ${asset.originalPath}`);
+      this.logger.verbose(`Finished motion photo video extraction for asset ${asset.id}: ${asset.originalPath}`);
     } catch (error: Error | any) {
       this.logger.error(
         `Failed to extract motion video for ${asset.id}: ${asset.originalPath}: ${error}`,
@@ -1234,11 +1234,11 @@ export class MetadataService extends BaseService {
 
     const facesToRemove = asset.faces.filter((face) => face.sourceType === SourceType.EXIF).map((face) => face.id);
     if (facesToRemove.length > 0) {
-      this.logger.debug(`Removing ${facesToRemove.length} faces for asset ${asset.id}: ${asset.originalPath}`);
+      this.logger.verbose(`Removing ${facesToRemove.length} faces for asset ${asset.id}: ${asset.originalPath}`);
     }
 
     if (facesToAdd.length > 0) {
-      this.logger.debug(
+      this.logger.verbose(
         `Creating ${facesToAdd.length} faces from metadata for asset ${asset.id}: ${asset.originalPath}`,
       );
     }
@@ -1278,7 +1278,7 @@ export class MetadataService extends BaseService {
       // FileCreateDate is not available on linux, likely because exiftool hasn't integrated the statx syscall yet
       // birthtime is not available in Docker on macOS, so it appears as 0
       const earliestDate = stats.birthtimeMs ? new Date(Math.min(stats.mtimeMs, stats.birthtimeMs)) : stats.mtime;
-      this.logger.debug(
+      this.logger.verbose(
         `No exif date time found, falling back on ${earliestDate.toISOString()}, earliest of file creation and modification for asset ${asset.id}: ${asset.originalPath}`,
       );
       dateTimeOriginal = localDateTime = earliestDate;
@@ -1403,7 +1403,7 @@ export class MetadataService extends BaseService {
     }
 
     if (sidecarPath) {
-      this.logger.debug(`Detected sidecar at '${sidecarPath}' for asset ${asset.id}: ${asset.originalPath}`);
+      this.logger.verbose(`Detected sidecar at '${sidecarPath}' for asset ${asset.id}: ${asset.originalPath}`);
       await this.assetRepository.update({ id: asset.id, sidecarPath });
       return JobStatus.SUCCESS;
     }
@@ -1412,7 +1412,7 @@ export class MetadataService extends BaseService {
       return JobStatus.FAILED;
     }
 
-    this.logger.debug(`No sidecar found for asset ${asset.id}: ${asset.originalPath}`);
+    this.logger.verbose(`No sidecar found for asset ${asset.id}: ${asset.originalPath}`);
     await this.assetRepository.update({ id: asset.id, sidecarPath: null });
 
     return JobStatus.SUCCESS;
@@ -1505,7 +1505,7 @@ export class MetadataService extends BaseService {
     const jsonData = await this.getExifJsonTags(asset);
 
     if (!jsonData) return;
-    this.logger.debug('getExtraData', jsonData);
+    this.logger.verbose('getExtraData', jsonData);
 
 
     const mainPerson: SideCarPersonDto = {

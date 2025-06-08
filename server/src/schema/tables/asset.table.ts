@@ -2,6 +2,7 @@ import { UpdatedAtTrigger, UpdateIdColumn } from 'src/decorators';
 import { AssetStatus, AssetType, AssetVisibility } from 'src/enum';
 import { asset_visibility_enum, assets_status_enum } from 'src/schema/enums';
 import { assets_delete_audit } from 'src/schema/functions';
+import { DirectoryTable } from 'src/schema/tables/directory.table';
 import { LibraryTable } from 'src/schema/tables/library.table';
 import { StackTable } from 'src/schema/tables/stack.table';
 import { UserTable } from 'src/schema/tables/user.table';
@@ -119,6 +120,9 @@ export class AssetTable {
   @ForeignKeyColumn(() => LibraryTable, { onDelete: 'CASCADE', onUpdate: 'CASCADE', nullable: true })
   libraryId?: string | null;
 
+  @ForeignKeyColumn(() => DirectoryTable, { onDelete: 'CASCADE', onUpdate: 'CASCADE', nullable: true })
+  directoryId?: string | null;
+  
   @Column({ type: 'boolean', default: false })
   isExternal!: boolean;
 

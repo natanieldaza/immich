@@ -114,7 +114,7 @@ export class SocialMediaService extends BaseService {
     };
   }
   async getAllByPersonId(auth: AuthDto, personId: string): Promise<SocialMediaResponseDto[]> {
-    this.logger.debug(`Fetching social media accounts for person ID: ${personId}`);
+    this.logger.verbose(`Fetching social media accounts for person ID: ${personId}`);
     const socialMedia = await this.socialMediaRepository.GetAllSocialMediabyPersonId(personId);
     if (!socialMedia) {
       throw new BadRequestException('No social media accounts found for this person');
@@ -180,7 +180,7 @@ export class SocialMediaService extends BaseService {
   async handleSocialMediaDataScraping(job: JobOf<JobName.SOCIAL_MEDIA_DATA_SCRAPPING>): Promise<JobStatus> {
 
     const { force } = job;
-    this.logger.debug(`Force: ${force}`);
+    this.logger.verbose(`Force: ${force}`);
 
 
 
