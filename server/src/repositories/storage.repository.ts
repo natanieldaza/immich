@@ -225,7 +225,7 @@ export class StorageRepository {
    */
   async *walk(walkOptions: WalkOptionsDto): AsyncGenerator<string[]> {
     const { pathsToCrawl, exclusionPatterns, includeHidden, typeFilter, take = 100, deepth = Infinity } = walkOptions;
-    this.logger.debug(`Starting walk with options: ${JSON.stringify(walkOptions)}`);
+    this.logger.verbose(`Starting walk with options: ${JSON.stringify(walkOptions)}`);
     // 🔍 Filtrar rutas inaccesibles
     const validPaths: string[] = [];
     for (const path of pathsToCrawl) {

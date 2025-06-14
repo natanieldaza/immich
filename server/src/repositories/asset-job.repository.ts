@@ -267,7 +267,7 @@ export class AssetJobRepository {
   streamForMetadataExtraction(force?: boolean) {
     return this.db
       .selectFrom('assets')
-      .select(['assets.id'])
+      .select(['assets.id', 'assets.directoryId'])
       .$if(!force, (qb) =>
         qb
           .leftJoin('asset_job_status', 'asset_job_status.assetId', 'assets.id')
@@ -277,6 +277,7 @@ export class AssetJobRepository {
           .where('assets.visibility', '!=', AssetVisibility.HIDDEN),
       )
       .where('assets.deletedAt', 'is', null)
+      .orderBy('assets.directoryId', 'desc')
       .stream();
   }
 

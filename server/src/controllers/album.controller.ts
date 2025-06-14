@@ -14,17 +14,19 @@ import { BulkIdResponseDto, BulkIdsDto } from 'src/dtos/asset-ids.response.dto';
 import { AuthDto } from 'src/dtos/auth.dto';
 import { Permission } from 'src/enum';
 import { Auth, Authenticated } from 'src/middleware/auth.guard';
+import { LoggingRepository } from 'src/repositories/logging.repository';
 import { AlbumService } from 'src/services/album.service';
 import { ParseMeUUIDPipe, UUIDParamDto } from 'src/validation';
 
 @ApiTags('Albums')
 @Controller('albums')
 export class AlbumController {
-  constructor(private service: AlbumService) {}
+  constructor(private service: AlbumService, private logger: LoggingRepository) {}
 
   @Get()
   @Authenticated({ permission: Permission.ALBUM_READ })
   getAllAlbums(@Auth() auth: AuthDto, @Query() query: GetAlbumsDto): Promise<AlbumResponseDto[]> {
+    this.logger.debug('Fetching all albums with query:', query);
     return this.service.getAll(auth, query);
   }
 

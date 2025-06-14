@@ -28,7 +28,13 @@ export class SitesUrlRepository {
           ownerId: String(auth.user.id), // Ensure this is provided
           posts: data.posts ?? 0, // Default to 0 if not provided
         }).onConflict((oc) => oc.columns(['url']) // Specify the unique constraint column
-          .doUpdateSet({ preference: sql`GREATEST(sites_url.preference, EXCLUDED.preference)` })) // Update preference if the new one is greater
+        //if different preference, update it
+        .doUpdateSet({
+          preference: sql`CASE 
+            WHEN sites_url.preference IS DISTINCT FROM EXCLUDED.preference 
+            THEN EXCLUDED.preference 
+            ELSE sites_url.preference 
+            END`       }))//.doUpdateSet({ preference: sql`GREATEST(sites_url.preference, EXCLUDED.preference)` }) // Update preference if the new one is greater
         .returningAll()
         .execute();
   

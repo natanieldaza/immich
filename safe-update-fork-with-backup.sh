@@ -1,6 +1,13 @@
 #!/bin/bash
 
-set -e  # Exit immediately on error
+set -e  # Exit on any error
+trap 'echo "❌ Script interrupted or failed."; exit 1' INT TERM ERR
+
+# Make sure we are in a git repo
+if ! git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+  echo "❌ Not inside a git repository."
+  exit 1
+fi
 
 function prompt_default() {
   local prompt="$1"
@@ -15,12 +22,18 @@ echo "🔧 Safe Fork Script: Rebase with upstream OR just save to GitHub"
 read -p "🛠️  Do you want to (r)ebase with upstream or just (s)ave your local changes to GitHub? (r/s): " MODE
 
 if [[ "$MODE" == "s" || "$MODE" == "S" ]]; then
-  # Simple save mode
   echo "💾 Save Mode: Push changes to your GitHub fork"
   BRANCH=$(git branch --show-current)
+
   read -p "✏️  Commit message: " MSG
   git add .
-  git commit -m "$MSG"
+
+  if git diff --cached --quiet; then
+    echo "⚠️  No changes staged to commit."
+  else
+    git commit -m "$MSG"
+  fi
+
   git push origin "$BRANCH"
   echo "✅ Work saved to origin/$BRANCH"
   exit 0
@@ -31,9 +44,17 @@ UPSTREAM_REMOTE=$(prompt_default "🛰️  Upstream remote?" "upstream")
 UPSTREAM_BRANCH=$(prompt_default "🌿 Upstream branch?" "main")
 LOCAL_BASE=$(prompt_default "📦 Local base branch?" "main")
 read -p "✏️  Your custom working branch (with edits)? " MY_BRANCH
+
 if [ -z "$MY_BRANCH" ]; then
   echo "❌ You must provide a branch name."
   exit 1
+fi
+
+CURRENT_BRANCH=$(git branch --show-current)
+if [[ "$CURRENT_BRANCH" != "$MY_BRANCH" ]]; then
+  echo "⚠️  You are currently on '$CURRENT_BRANCH', but you specified '$MY_BRANCH'."
+  read -p "❓ Continue anyway? (y/n): " CONTINUE_ANYWAY
+  [[ "$CONTINUE_ANYWAY" =~ ^[Yy]$ ]] || exit 1
 fi
 
 # Step 2: Stash uncommitted changes
@@ -42,7 +63,7 @@ git stash push -u -m "Auto-stash before upstream rebase" || true
 
 # Step 3: Optional backup before rebase
 read -p "🛡️  Do you want to backup '$MY_BRANCH' to your fork before rebasing? (y/n): " SHOULD_BACKUP
-if [[ "$SHOULD_BACKUP" == "y" || "$SHOULD_BACKUP" == "Y" ]]; then
+if [[ "$SHOULD_BACKUP" =~ ^[Yy]$ ]]; then
   TIMESTAMP=$(date +%Y%m%d-%H%M%S)
   BACKUP_BRANCH="backup/${MY_BRANCH}-${TIMESTAMP}"
   echo "📤 Pushing backup to: origin/$BACKUP_BRANCH"
@@ -81,14 +102,16 @@ if git stash list | grep -q "Auto-stash before upstream rebase"; then
     echo "⚠️  Warning: Could not apply stash. Your changes are safe in stash. Use 'git stash list' and 'git stash apply'."
   }
 else
-  echo "✅ No stash needed."
+  echo "✅ No stash to apply."
 fi
 
 # Step 8: Push updated branch
 read -p "🚀 Push updated '$MY_BRANCH' to your GitHub fork? (y/n): " SHOULD_PUSH
-if [[ "$SHOULD_PUSH" == "y" || "$SHOULD_PUSH" == "Y" ]]; then
+if [[ "$SHOULD_PUSH" =~ ^[Yy]$ ]]; then
   git add .
-  git commit -m "Final commit after rebase and stash restoration (if any)" || true
+  if ! git diff --cached --quiet; then
+    git commit -m "Final commit after rebase and stash restoration (if any)" || true
+  fi
   echo "📤 Pushing to origin/$MY_BRANCH..."
   git push origin "$MY_BRANCH"
   echo "✅ Changes pushed!"

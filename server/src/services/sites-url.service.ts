@@ -30,6 +30,17 @@ export class SitesUrlService extends BaseService {
                 posts: dto.posts ?? 0,
             });
 
+            if ((newSiteUrl.preference ?? 0) > 5)
+            {
+                await this.jobRepository.queue({
+                    name: JobName.GALLERY_DOWNLOADER,
+                    data: {
+                        id: newSiteUrl.id,
+                        url: newSiteUrl.url,
+                    }
+                });
+            }
+
             return {
                 id: newSiteUrl.id ? String(newSiteUrl.id) : '',
                 url: newSiteUrl.url,
@@ -314,7 +325,7 @@ export class SitesUrlService extends BaseService {
             await this.jobRepository.queueAll(
 
                 siteUrls.map((siteUrl) => ({
-                    name: JobName.GALLERY_DOWNLOADER,
+                    name: JobName.GALLERY_DOWNLOADER_PRIORITY,
                     data: {
                         id: siteUrl.id,
                         url: siteUrl.url,

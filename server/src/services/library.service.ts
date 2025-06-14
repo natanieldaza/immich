@@ -267,7 +267,7 @@ export class LibraryService extends BaseService {
         ? `(${job.progressCounter} of ${job.totalDirectories})`
         : `(${job.progressCounter} done so far)`;
 
-    this.logger.verbose(`Imported ${directoryIds.length} ${progressMessage} directory(ies) into library ${job.libraryId}`);
+    this.logger.debug(`Imported ${directoryIds.length} ${progressMessage} directory(ies) into library ${job.libraryId}`);
     await this.jobRepository.queueAll(
       directoryIds.map((directory) => ({
         name: JobName.LIBRARY_QUEUE_SYNC_FILES,
@@ -575,7 +575,7 @@ export class LibraryService extends BaseService {
       pathsToCrawl: validImportPaths,
       includeHidden: false,
       exclusionPatterns: library.exclusionPatterns,
-      take: JOBS_LIBRARY_PAGINATION_SIZE,
+      take: 1000,
       typeFilter: 'files',
       deepth: 1,
     });
@@ -740,7 +740,7 @@ export class LibraryService extends BaseService {
       this.logger.debug(`Library ${job.id} not found, skipping directory import`);
       return JobStatus.SKIPPED;
     }
-
+    this.logger.debug(`Starting directory import for force ${job.force}...`);
     this.logger.verbose(`Validating import paths for library ${library.id}...`);
 
     const validImportPaths: string[] = [];
@@ -764,7 +764,7 @@ export class LibraryService extends BaseService {
       pathsToCrawl: validImportPaths,
       includeHidden: false,
       exclusionPatterns: library.exclusionPatterns,
-      take: JOBS_LIBRARY_PAGINATION_SIZE,
+      take: 1000,
       typeFilter: 'directories',
     });
     this.logger.debug(`Starting disk crawl of ${validImportPaths.length} import path(s) for library ${library.id}...`);
@@ -773,49 +773,86 @@ export class LibraryService extends BaseService {
     let importCount = 0;
 
 
-
+    const allDirectories: Set<string> = new Set();
     for await (const pathBatch of directoriesOnDisk) {
       crawlCount += pathBatch.length;
       this.logger.debug(`Found ${pathBatch.length} directory(ies) in library ${library.id}}`);
       const directories = await this.directoryRepository.filterNewExternalDirectoryPaths(library.id, pathBatch);
       this.logger.debug(`Filtered out ${directories.length} new directory(ies) for import`);
 
-      if (directories.length > 0) {
-        importCount += directories.length;
-
-        await this.jobRepository.queue({
-          name: JobName.LIBRARY_SYNC_DIRECTORIES,
-          data: {
-            libraryId: library.id,
-            directories,
-            progressCounter: crawlCount,
-            force: job.force,
-          },
-        });
+      for (const dir of directories) {
+        allDirectories.add(dir);
       }
+      // if (directories.length > 0) {
+      //   importCount += directories.length;
+
+      //   await this.jobRepository.queue({
+      //     name: JobName.LIBRARY_SYNC_DIRECTORIES,
+      //     data: {
+      //       libraryId: library.id,
+      //       directories,
+      //       progressCounter: crawlCount,
+      //       force: job.force,
+      //     },
+      //   });
+      // }
       this.logger.debug(
         `Crawled ${crawlCount} directory(ies) so far: ${directories.length} of current batch of ${pathBatch.length} will be imported to library ${library.id}...`,
       );
     }
+    this.logger.debug(`Crawled ${crawlCount} directory(ies) in total for library ${library.id}`);
+
+    
     if (job.force) {
 
       const notProcessedDirectories = await this.directoryRepository.getByStatus([DirectoryStatus.ADDED, DirectoryStatus.FAILED, DirectoryStatus.SKIPPED]);
-      if (notProcessedDirectories.length > 0) {
-        this.logger.debug(`Found ${notProcessedDirectories.length} directory(ies) that were not processed`);
-        const directories = notProcessedDirectories.map((directory) => directory.path);
-        importCount += directories.length;
-        this.logger.debug(`Re-queuing ${directories.length} directory(ies) for import into library ${library.id}`);
-        await this.jobRepository.queue({
-          name: JobName.LIBRARY_SYNC_DIRECTORIES,
-          data: {
-            libraryId: library.id,
-            directories,
-            progressCounter: crawlCount,
-            force: job.force,
-          },
-        });
+      for (const directory of notProcessedDirectories) {
+        allDirectories.add(directory.path);
       }
+      // if (notProcessedDirectories.length > 0) {
+      //   this.logger.debug(`Found ${notProcessedDirectories.length} directory(ies) that were not processed`);
+      //   const directories = notProcessedDirectories.map((directory) => directory.path);
+      //   importCount += directories.length;
+      //   this.logger.debug(`Re-queuing ${directories.length} directory(ies) for import into library ${library.id}`);
+      //   await this.jobRepository.queue({
+      //     name: JobName.LIBRARY_SYNC_DIRECTORIES,
+      //     data: {
+      //       libraryId: library.id,
+      //       directories,
+      //       progressCounter: crawlCount,
+      //       force: job.force,
+      //     },
+      //   });
+      // }
     }
+    
+    // for (const directoryPath of allDirectories) {
+    //   //this.logger.debug(`Queuing directory ${directoryPath} for import into library ${library.id}`);
+    //   importCount++;
+    //   await this.jobRepository.queue({
+    //     name: JobName.LIBRARY_SYNC_DIRECTORIES,
+    //     data: {
+    //       libraryId: library.id,
+    //       directories: [directoryPath],
+    //       progressCounter: crawlCount,
+    //       force: job.force,
+    //     },
+    //   });
+    // }
+
+    await this.jobRepository.queue(
+      {
+        name: JobName.LIBRARY_SYNC_DIRECTORIES,
+        data: {
+          libraryId: library.id,
+          directories: [...allDirectories],
+          progressCounter: crawlCount,
+          force: job.force,
+        },
+      }
+    );
+    importCount = allDirectories.size;
+
     this.logger.debug(
       `Finished disk crawl, ${crawlCount} directory(ies) found on disk and queued ${importCount} directory(ies) for import into ${library.id}`,
     );
