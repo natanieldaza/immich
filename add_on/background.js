@@ -5,7 +5,8 @@ const preferenceLabels = {
   2: "Save (Below Average)",
   3: "Save (Medium)",
   4: "Save (Above Average)",
-  5: "Save (High Priority)"
+  5: "Save (High Priority)",
+  6: "Save (Highest Priority)"
 };
 
 chrome.storage.local.get("authToken", ({ authToken }) => {
@@ -13,7 +14,7 @@ chrome.storage.local.get("authToken", ({ authToken }) => {
 });
 
 chrome.runtime.onInstalled.addListener(() => {
-  for (let i = 1; i <= 5; i++) {
+  for (let i = 1; i <= 6; i++) {
     chrome.contextMenus.create({
       id: `${BASE_ID}${i}`,
       title: preferenceLabels[i],

@@ -42,6 +42,10 @@
     "save_preference_5": {
       "suggested_key": { "default": "Ctrl+Shift+5" },
       "description": "Save with high priority"
+    },
+    "save_preference_6": {
+      "suggested_key": { "default": "Ctrl+Shift+6" },
+      "description": "Save with highest priority"
     }
   },
   "browser_action": {
