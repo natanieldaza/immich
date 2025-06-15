@@ -54,9 +54,23 @@ else
   echo "⏭️  Skipping backup..."
 fi
 
-# Step 4: Fetch upstream
-echo "👉 Fetching from $UPSTREAM_REMOTE..."
-git fetch "$UPSTREAM_REMOTE"
+# Step 4: Fetch upstream without submodules
+echo "👉 Fetching from $UPSTREAM_REMOTE (no submodules)..."
+if ! git fetch "$UPSTREAM_REMOTE" --recurse-submodules=no; then
+  echo "⚠️  Fetch failed, trying to clean submodule 'e2e/test-assets'..."
+
+  git submodule deinit -f e2e/test-assets || true
+  git rm --cached e2e/test-assets || true
+  rm -rf .git/modules/e2e/test-assets || true
+  git config -f .gitmodules --remove-section "submodule.e2e/test-assets" || true
+  rm -rf e2e/test-assets || true
+
+  echo "🔁 Retrying fetch..."
+  git fetch "$UPSTREAM_REMOTE" --recurse-submodules=no || {
+    echo "❌ Fetch failed again. Please check the upstream repository manually."
+    exit 1
+  }
+fi
 
 # Step 5: Update local base
 echo "👉 Switching to $LOCAL_BASE..."
@@ -68,11 +82,14 @@ git merge "$UPSTREAM_REMOTE/$UPSTREAM_BRANCH"
 echo "👉 Switching to $MY_BRANCH..."
 git checkout "$MY_BRANCH"
 echo "🔁 Rebasing $MY_BRANCH onto $LOCAL_BASE..."
-git rebase "$LOCAL_BASE" || {
-  echo "❌ Rebase failed. Resolve conflicts, then run 'git add .' and 'git rebase --continue'."
-  echo "📌 Once done, re-run this script to continue."
+if ! git rebase "$LOCAL_BASE"; then
+  echo "❌ Rebase failed due to conflicts."
+  echo "🔧 Fix conflicts manually, then run:"
+  echo "   git add <fixed-files>"
+  echo "   git rebase --continue"
+  echo "📌 Once done, re-run this script to finish the push step."
   exit 1
-}
+fi
 
 # Step 7: Restore stash
 if git stash list | grep -q "Auto-stash before upstream rebase"; then
