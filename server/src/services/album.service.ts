@@ -37,8 +37,9 @@ export class AlbumService extends BaseService {
   }
 
   async getAll({ user: { id: ownerId } }: AuthDto, { assetId, shared }: GetAlbumsDto): Promise<AlbumResponseDto[]> {
-    await this.albumRepository.updateThumbnails();
-
+    //await this.albumRepository.updateThumbnails();
+    
+    const startTime = Date.now();
     let albums: MapAlbumDto[];
     if (assetId) {
       albums = await this.albumRepository.getByAssetId(ownerId, assetId);
@@ -50,6 +51,8 @@ export class AlbumService extends BaseService {
       albums = await this.albumRepository.getOwned(ownerId);
     }
 
+    //print how long it took to fetch albums
+    
     // Get asset count for each album. Then map the result to an object:
     // { [albumId]: assetCount }
     const results = await this.albumRepository.getMetadataForIds(albums.map((album) => album.id));
@@ -57,7 +60,7 @@ export class AlbumService extends BaseService {
     for (const metadata of results) {
       albumMetadata[metadata.albumId] = metadata;
     }
-
+    
     return albums.map((album) => ({
       ...mapAlbumWithoutAssets(album),
       sharedLinks: undefined,

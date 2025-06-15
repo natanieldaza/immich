@@ -18,13 +18,16 @@ import { RouteKey } from 'src/enum';
 import { Auth, Authenticated } from 'src/middleware/auth.guard';
 import { LoggingRepository } from 'src/repositories/logging.repository';
 import { AssetService } from 'src/services/asset.service';
+import { MetadataService } from 'src/services/metadata.service';
 import { UUIDParamDto } from 'src/validation';
 
 @ApiTags('Assets')
 @Controller(RouteKey.ASSET)
 export class AssetController {
-  metadataService: any;
-  constructor(private service: AssetService,private logger: LoggingRepository) {}
+  
+  constructor(private service: AssetService, private logger: LoggingRepository, private metadataService: MetadataService) {
+  
+  }
 
   @Get('random')
   @Authenticated()
@@ -94,7 +97,7 @@ export class AssetController {
   ): Promise<AssetResponseDto> {
     const response = await this.service.get(auth, id) as AssetResponseDto;
     const extraData = await this.metadataService.getExtraData(id, response.people ?? []);
-
+    
     if (extraData) {
       const {
         mainPerson,

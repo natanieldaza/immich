@@ -180,6 +180,9 @@ export class MetadataService extends BaseService {
     let queue: { name: JobName.METADATA_EXTRACTION; data: { id: string } }[] = [];
     for await (const asset of this.assetJobRepository.streamForMetadataExtraction(force)) {
       queue.push({ name: JobName.METADATA_EXTRACTION, data: { id: asset.id } });
+      if (asset.directoryId) {
+        await this.jobRepository.addPendingSidecarCount(asset.directoryId);
+      }
 
       if (queue.length >= JOBS_ASSET_PAGINATION_SIZE) {
         await this.jobRepository.queueAll(queue);
@@ -1369,7 +1372,9 @@ export class MetadataService extends BaseService {
       return JobStatus.FAILED;
     }
 
+
     if (isSync && !asset.sidecarPath) {
+      this.logger.verbose(`No sidecar found for asset ${asset.id}: ${asset.originalPath}`);
       return JobStatus.FAILED;
     }
 

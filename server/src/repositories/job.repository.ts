@@ -267,6 +267,11 @@ export class JobRepository {
     }
   }
 
+  async addPendingSidecarCount(directoryId: string) {
+    const key = `import:directory:${directoryId}:pending_sidecar_count`;
+    await this.redis.incr(key);
+  }
+
   async setPendingSidecarCount(directoryId: string, count: number) {
     const key = `import:directory:${directoryId}:pending_sidecar_count`;
     await this.redis.set(key, count);
