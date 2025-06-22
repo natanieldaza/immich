@@ -9,7 +9,7 @@ body:
     attributes:
       value: |
         **Thanks for reporting a bug!**
-        Please complete the form below so we can understand the issue and fix it.
+        Please fill out the form below so we can understand and fix the problem.
 
   - type: textarea
     id: what-happened
@@ -24,11 +24,7 @@ body:
     attributes:
       label: Steps to Reproduce
       description: How can we reproduce the problem?
-      placeholder: |
-        1. Go to '...'
-        2. Click on '...'
-        3. Scroll down to '...'
-        4. See error
+      placeholder: "1. Go to '...'\n2. Click on '...'\n3. See error"
       required: true
 
   - type: textarea
