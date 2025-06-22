@@ -1,114 +1,55 @@
-name: Report an issue with Immich
-description: Report an issue with Immich
+name: 🐛 Bug Report
+description: Report a bug or unexpected behavior in this project
+title: "[Bug]: "
+labels: [bug]
+assignees: []
+
 body:
-  - type: checkboxes
-    attributes:
-      label: I have searched the existing issues, both open and closed, to make sure this is not a duplicate report.
-      options:
-        - label: 'Yes'
-
   - type: markdown
     attributes:
       value: |
-        This issue form is for reporting bugs only!
-
-        If you have a feature or enhancement request, please use the [feature request][fr] section of our [GitHub Discussions][fr].
-
-        [fr]: https://github.com/immich-app/immich/discussions/new?category=feature-request
+        **Thanks for reporting a bug!**
+        Please complete the form below so we can understand the issue and fix it.
 
   - type: textarea
-    validations:
-      required: true
+    id: what-happened
     attributes:
-      label: The bug
-      description: >-
-        Describe the issue you are experiencing here, to communicate to the
-        maintainers. Tell us what you were trying to do and what happened.
-
-        Provide a clear and concise description of what the problem is.
-
-  - type: markdown
-    attributes:
-      value: |
-        ## Environment
-
-  - type: input
-    validations:
-      required: true
-    attributes:
-      label: The OS that Immich Server is running on
-      placeholder: Ubuntu 22.10, Debian, Arch...etc
-
-  - type: input
-    id: version
-    validations:
-      required: true
-    attributes:
-      label: Version of Immich Server
-      placeholder: v1.0.0
-
-  - type: input
-    validations:
-      required: true
-    attributes:
-      label: Version of Immich Mobile App
-      placeholder: v1.0.0
-
-  - type: checkboxes
-    validations:
-      required: true
-    attributes:
-      label: Platform with the issue
-      options:
-        - label: Server
-        - label: Web
-        - label: Mobile
-
-  - type: textarea
-    validations:
-      required: true
-    attributes:
-      label: Your docker-compose.yml content
-      render: YAML
-
-  - type: textarea
-    validations:
-      required: true
-    attributes:
-      label: Your .env content
-      description: Please provide the redacted .env content of your setup
-      render: Shell
-
-  - type: textarea
-    id: repro
-    attributes:
-      label: Reproduction steps
-      description: 'How do you trigger this bug? Please walk us through it step by step.'
-      value: |
-        1.
-        2.
-        3.
-        ...
-    validations:
+      label: What happened?
+      description: Describe the bug in as much detail as possible.
+      placeholder: A clear and concise description of what the bug is.
       required: true
 
   - type: textarea
-    id: logs
+    id: steps-to-reproduce
     attributes:
-      label: Relevant log output
-      description:
-        Please copy and paste any relevant logs below. (code formatting is
-        enabled, no need for backticks)
-      render: shell
-    validations:
+      label: Steps to Reproduce
+      description: How can we reproduce the problem?
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. Scroll down to '...'
+        4. See error
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+      placeholder: A description of what you expected instead.
       required: false
 
-  - type: textarea
+  - type: input
+    id: environment
     attributes:
-      label: Additional information
-      description: >
-        If you have any additional information for us, use the field below.
+      label: Environment Info (optional)
+      description: Node.js version, browser, OS, device, etc.
+      placeholder: Example: Node 20.2.0, Firefox 125, Ubuntu 22.04
 
-  - type: markdown
+  - type: textarea
+    id: additional-context
     attributes:
-      value: Thank you for submitting the form
+      label: Additional Context or Logs
+      description: Add screenshots, logs, or any other useful context here.
+      placeholder: Paste logs, stack traces, screenshots, etc.
+      required: false
