@@ -18,7 +18,17 @@ import {
   ValidateLibraryImportPathResponseDto,
   ValidateLibraryResponseDto,
 } from 'src/dtos/library.dto';
-import { AlbumUserRole, AssetStatus, AssetType, DatabaseLock, DirectoryStatus, ImmichWorker, JobName, JobStatus, QueueName } from 'src/enum';
+import {
+  AlbumUserRole,
+  AssetStatus,
+  AssetType,
+  DatabaseLock,
+  DirectoryStatus,
+  ImmichWorker,
+  JobName,
+  JobStatus,
+  QueueName,
+} from 'src/enum';
 import { ArgOf } from 'src/repositories/event.repository';
 import { AssetSyncResult } from 'src/repositories/library.repository';
 import { BaseService } from 'src/services/base.service';
@@ -31,6 +41,8 @@ export class LibraryService extends BaseService {
   private watchLibraries = false;
   private lock = false;
   private watchers: Record<string, () => Promise<void>> = {};
+
+  private isSameChecksum = (a: Buffer, b: Buffer) => a.equals(b);
 
   @OnEvent({ name: 'config.init', workers: [ImmichWorker.MICROSERVICES] })
   async onConfigInit({
@@ -225,11 +237,8 @@ export class LibraryService extends BaseService {
     return mapLibrary(library);
   }
 
-
-
   @OnJob({ name: JobName.LIBRARY_SYNC_DIRECTORIES, queue: QueueName.LIBRARY })
   async handleSyncDirectories(job: JobOf<JobName.LIBRARY_SYNC_DIRECTORIES>): Promise<JobStatus> {
-
     const library = await this.libraryRepository.get(job.libraryId);
     // We need to check if the library still exists as it could have been deleted after the scan was queued
     if (!library) {
@@ -240,17 +249,19 @@ export class LibraryService extends BaseService {
       return JobStatus.FAILED;
     }
 
-    const directoryImports = job.directories.map((directoryPath) => this.processDirectoryEntity(directoryPath, library.ownerId, job.libraryId));
+    const directoryImports = job.directories.map((directoryPath) =>
+      this.processDirectoryEntity(directoryPath, library.ownerId, job.libraryId),
+    );
 
     const directoryIds: string[] = [];
 
     for (let i = 0; i < directoryImports.length; i += 5000) {
       // Chunk the imports to avoid the postgres limit of max parameters at once
       const chunk = directoryImports.slice(i, i + 5000);
-      await this.directoryRepository.createAll(chunk).then((directories) => directoryIds.push(...directories.map((directory) => directory.id)));
-     
+      await this.directoryRepository
+        .createAll(chunk)
+        .then((directories) => directoryIds.push(...directories.map((directory) => directory.id)));
     }
-
 
     if (job.force) {
       const existingDirectories = await this.directoryRepository.getByPaths(job.directories, library.id);
@@ -259,7 +270,11 @@ export class LibraryService extends BaseService {
         .map((directory) => directory.id)
         .filter((id) => !directoryIds.includes(String(id)));
 
-      directoryIds.push(...newDirectoryIds.filter((id): id is ColumnType<string, string | undefined, string> => id !== undefined).map(String));
+      directoryIds.push(
+        ...newDirectoryIds
+          .filter((id): id is ColumnType<string, string | undefined, string> => id !== undefined)
+          .map(String),
+      );
     }
 
     const progressMessage =
@@ -267,7 +282,9 @@ export class LibraryService extends BaseService {
         ? `(${job.progressCounter} of ${job.totalDirectories})`
         : `(${job.progressCounter} done so far)`;
 
-    this.logger.debug(`Imported ${directoryIds.length} ${progressMessage} directory(ies) into library ${job.libraryId}`);
+    this.logger.debug(
+      `Imported ${directoryIds.length} ${progressMessage} directory(ies) into library ${job.libraryId}`,
+    );
     await this.jobRepository.queueAll(
       directoryIds.map((directory) => ({
         name: JobName.LIBRARY_QUEUE_SYNC_FILES,
@@ -472,7 +489,6 @@ export class LibraryService extends BaseService {
         force,
       },
     });
-
   }
 
   async queueScanAll() {
@@ -491,23 +507,22 @@ export class LibraryService extends BaseService {
 
     const libraries = await this.libraryRepository.getAll(true);
 
-
     await Promise.all(libraries.map((library) => this.queueScan(library.id, force)));
     this.logger.log(`Queued ${libraries.length} library(s) for scan`);
 
     return JobStatus.SUCCESS;
   }
 
-
-
-  private checkExistingAsset(asset: {
-    isOffline: boolean;
-    libraryId: string | null;
-    originalPath: string;
-    status: AssetStatus;
-    fileModifiedAt: Date;
-  },
-    stat: Stats | null,): AssetSyncResult {
+  private checkExistingAsset(
+    asset: {
+      isOffline: boolean;
+      libraryId: string | null;
+      originalPath: string;
+      status: AssetStatus;
+      fileModifiedAt: Date;
+    },
+    stat: Stats | null,
+  ): AssetSyncResult {
     if (!stat) {
       // File not found on disk or permission error
       if (asset.isOffline) {
@@ -556,14 +571,12 @@ export class LibraryService extends BaseService {
 
     const validImportPaths: string[] = [];
 
-
     const validation = await this.validateImportPath(directory.path);
     if (validation.isValid) {
       validImportPaths.push(path.normalize(directory.path));
     } else {
       this.logger.warn(`Skipping invalid import path: ${directory.path}. Reason: ${validation.message}`);
     }
-
 
     if (validImportPaths.length === 0) {
       this.logger.warn(`No valid import paths found for directory ${directory.id}`);
@@ -583,22 +596,24 @@ export class LibraryService extends BaseService {
     let importCount = 0;
     let crawlCount = 0;
 
-    this.logger.verbose(`Starting disk crawl of ${validImportPaths.length} import path(s) for directory ${directory.id}...`);
+    this.logger.verbose(
+      `Starting disk crawl of ${validImportPaths.length} import path(s) for directory ${directory.id}...`,
+    );
 
     for await (const pathBatch of filesOnDisk) {
       crawlCount += pathBatch.length;
       const paths = await this.assetRepository.filterNewExternalAssetPathsByDirectory(String(directory.id), pathBatch);
 
       if (job.force) {
-        const existingAssets = await this.assetRepository.getbyLibraryIdAndDirectoryId(library.id, String(directory.id));
-        const newAssetPaths = existingAssets
-          .map((asset) => asset.originalPath)
-          .filter((path) => !paths.includes(path));
+        const existingAssets = await this.assetRepository.getbyLibraryIdAndDirectoryId(
+          library.id,
+          String(directory.id),
+        );
+        const newAssetPaths = existingAssets.map((asset) => asset.originalPath).filter((path) => !paths.includes(path));
         paths.push(...newAssetPaths);
       }
 
       if (paths.length > 0) {
-
         importCount += paths.length;
 
         this.logger.verbose(`Found ${paths.length} new file(s) in directory ${directory.id} and library ${library.id}`);
@@ -613,8 +628,6 @@ export class LibraryService extends BaseService {
           },
         });
       }
-
-
 
       this.logger.verbose(
         `Crawled ${crawlCount} file(s) so far: ${paths.length} of current batch of ${pathBatch.length} will be imported to directory ${directory.id}...`,
@@ -650,7 +663,6 @@ export class LibraryService extends BaseService {
       return JobStatus.FAILED;
     }
 
-
     //let assetImports = job.paths.map((assetPath) => this.processEntity(assetPath, library.ownerId, library.id, directory.id));
 
     let assetImports: Insertable<Assets>[] = [];
@@ -662,19 +674,16 @@ export class LibraryService extends BaseService {
       ),
     );
 
-
-
     let existingAssets: Insertable<Assets>[] = [];
-    const isSameChecksum = (a: Buffer, b: Buffer) => a.equals(b);
 
     if (job.force) {
       existingAssets = await this.assetRepository.getbyLibraryIdAndDirectoryId(library.id, String(directory.id));
-      this.logger.verbose(`Found ${existingAssets.length} existing asset(s) in library ${library.id} and directory ${directory.id}`);
+      this.logger.verbose(
+        `Found ${existingAssets.length} existing asset(s) in library ${library.id} and directory ${directory.id}`,
+      );
 
-      assetImports = assetImports.filter((asset) =>
-        !existingAssets.some((existingAsset) =>
-          isSameChecksum(existingAsset.checksum, asset.checksum)
-        )
+      assetImports = assetImports.filter(
+        (asset) => !existingAssets.some((existingAsset) => this.isSameChecksum(existingAsset.checksum, asset.checksum)),
       );
 
       this.logger.verbose(`Filtered out ${assetImports.length} new asset(s) for import`);
@@ -691,28 +700,8 @@ export class LibraryService extends BaseService {
       await this.assetRepository.createAll(chunk).then((assets) => assetIds.push(...assets.map((asset) => asset.id)));
     }
 
-    
-      
-    if(!directory.albumId) {
-      const directoryName = path.parse(directory.path).base;
-      const createAlbumDto = {
-        ownerId: library.ownerId,
-        albumName: directoryName,
-        description: `Auto-generated album for ${directoryName}`
-      };
-
-      const albumUsersDto = [{
-          userId: library.ownerId,
-          role: AlbumUserRole.EDITOR,
-        }];
-        const album = await this.albumRepository.create(createAlbumDto, assetIds, albumUsersDto);
-        this.logger.verbose(`Created album ${album.id} for directory ${directory.id}`);
-
-        if (album.id) {
-          await this.directoryRepository.update(String(directory.id), { albumId: album.id });
-        }
-    }
-
+    // Handle album creation with proper concurrency control
+    await this.ensureDirectoryAlbum(directory, library, assetIds);
 
     if (job.force) {
       const newAssetIds = existingAssets
@@ -772,7 +761,6 @@ export class LibraryService extends BaseService {
     let crawlCount = 0;
     let importCount = 0;
 
-
     const allDirectories: Set<string> = new Set();
     for await (const pathBatch of directoriesOnDisk) {
       crawlCount += pathBatch.length;
@@ -802,10 +790,12 @@ export class LibraryService extends BaseService {
     }
     this.logger.debug(`Crawled ${crawlCount} directory(ies) in total for library ${library.id}`);
 
-    
     if (job.force) {
-
-      const notProcessedDirectories = await this.directoryRepository.getByStatus([DirectoryStatus.ADDED, DirectoryStatus.FAILED, DirectoryStatus.SKIPPED]);
+      const notProcessedDirectories = await this.directoryRepository.getByStatus([
+        DirectoryStatus.ADDED,
+        DirectoryStatus.FAILED,
+        DirectoryStatus.SKIPPED,
+      ]);
       for (const directory of notProcessedDirectories) {
         allDirectories.add(directory.path);
       }
@@ -825,7 +815,7 @@ export class LibraryService extends BaseService {
       //   });
       // }
     }
-    
+
     // for (const directoryPath of allDirectories) {
     //   //this.logger.debug(`Queuing directory ${directoryPath} for import into library ${library.id}`);
     //   importCount++;
@@ -840,17 +830,15 @@ export class LibraryService extends BaseService {
     //   });
     // }
 
-    await this.jobRepository.queue(
-      {
-        name: JobName.LIBRARY_SYNC_DIRECTORIES,
-        data: {
-          libraryId: library.id,
-          directories: [...allDirectories],
-          progressCounter: crawlCount,
-          force: job.force,
-        },
-      }
-    );
+    await this.jobRepository.queue({
+      name: JobName.LIBRARY_SYNC_DIRECTORIES,
+      data: {
+        libraryId: library.id,
+        directories: [...allDirectories],
+        progressCounter: crawlCount,
+        force: job.force,
+      },
+    });
     importCount = allDirectories.size;
 
     this.logger.debug(
@@ -859,7 +847,6 @@ export class LibraryService extends BaseService {
     await this.libraryRepository.update(job.id, { refreshedAt: new Date() });
     return JobStatus.SUCCESS;
   }
-
 
   @OnJob({ name: JobName.LIBRARY_ASSET_REMOVAL, queue: QueueName.LIBRARY })
   async handleAssetRemoval(job: JobOf<JobName.LIBRARY_ASSET_REMOVAL>): Promise<JobStatus> {
@@ -875,7 +862,6 @@ export class LibraryService extends BaseService {
     return JobStatus.SUCCESS;
   }
 
-
   @OnJob({ name: JobName.LIBRARY_QUEUE_SYNC_ASSETS, queue: QueueName.LIBRARY })
   async handleQueueSyncAssets(job: JobOf<JobName.LIBRARY_QUEUE_SYNC_ASSETS>): Promise<JobStatus> {
     const directory = await this.directoryRepository.get(job.id);
@@ -890,7 +876,10 @@ export class LibraryService extends BaseService {
       return JobStatus.SKIPPED;
     }
 
-    const assetCount = await this.assetRepository.getDirectoryAssetCount(String(directory.libraryId), String(directory.id));
+    const assetCount = await this.assetRepository.getDirectoryAssetCount(
+      String(directory.libraryId),
+      String(directory.id),
+    );
     if (!assetCount) {
       this.logger.debug(`No assets found in library ${library.id} and directory ${directory.id}, skipping check`);
       return JobStatus.SUCCESS;
@@ -941,7 +930,7 @@ export class LibraryService extends BaseService {
         const completePercentage = ((100 * count) / assetCount).toFixed(1);
 
         this.logger.verbose(
-          `Queued check of ${count} of ${assetCount} (${completePercentage} %) existing asset(s) so far in library ${library.id} and directory ${directory.id}`
+          `Queued check of ${count} of ${assetCount} (${completePercentage} %) existing asset(s) so far in library ${library.id} and directory ${directory.id}`,
         );
       }
     };
@@ -958,7 +947,9 @@ export class LibraryService extends BaseService {
 
     await queueChunk();
 
-    this.logger.verbose(`Finished queuing ${count} asset check(s) for library ${library.id} and directory ${directory.id}`);
+    this.logger.verbose(
+      `Finished queuing ${count} asset check(s) for library ${library.id} and directory ${directory.id}`,
+    );
 
     return JobStatus.SUCCESS;
   }
@@ -1043,9 +1034,13 @@ export class LibraryService extends BaseService {
     if (trashedAssetIdsToOnline.length > 0) {
       promises.push(this.assetRepository.updateAll(trashedAssetIdsToOnline, { isOffline: false }));
     }
-    this.logger.verbose(`Updating ${assetIdsToOffline.length} asset(s) to offline, ${trashedAssetIdsToOffline.length} trashed asset(s) to offline, ${assetIdsToOnline.length} asset(s) to online, ${trashedAssetIdsToOnline.length} trashed asset(s) to online in library ${job.libraryId}`);
+    this.logger.verbose(
+      `Updating ${assetIdsToOffline.length} asset(s) to offline, ${trashedAssetIdsToOffline.length} trashed asset(s) to offline, ${assetIdsToOnline.length} asset(s) to online, ${trashedAssetIdsToOnline.length} trashed asset(s) to online in library ${job.libraryId}`,
+    );
     if (assetIdsToUpdate.length > 0) {
-      this.logger.verbose(`Sync Assets Updating ${assetIdsToUpdate.length} asset(s) in library ${job.libraryId} and directory ${job.directoryId}`);
+      this.logger.verbose(
+        `Sync Assets Updating ${assetIdsToUpdate.length} asset(s) in library ${job.libraryId} and directory ${job.directoryId}`,
+      );
 
       promises.push(this.queuePostSyncJobs(assetIdsToUpdate, String(job.directoryId)));
     }
@@ -1059,6 +1054,256 @@ export class LibraryService extends BaseService {
     );
 
     return JobStatus.SUCCESS;
+  }
+
+  private async ensureDirectoryAlbum(directory: any, library: any, newAssetIds: string[]): Promise<void> {
+    // First, re-fetch the directory to get the latest albumId state
+    const currentDirectory = await this.directoryRepository.get(String(directory.id));
+
+    if (!currentDirectory) {
+      this.logger.warn(`Directory ${directory.id} not found during album creation`);
+      return;
+    }
+
+    // If album already exists (possibly created by another concurrent job), add assets to it
+    if (currentDirectory.albumId) {
+      if (newAssetIds.length > 0) {
+        try {
+          await this.albumRepository.addAssetIds(currentDirectory.albumId, newAssetIds);
+          this.logger.verbose(
+            `Added ${newAssetIds.length} asset(s) to existing album ${currentDirectory.albumId} for directory ${directory.id}`,
+          );
+        } catch (error) {
+          this.logger.error(
+            `Failed to add assets to album ${currentDirectory.albumId} for directory ${directory.id}:`,
+            error,
+          );
+        }
+      }
+      return;
+    }
+
+    // No album exists, attempt to create one atomically
+    try {
+      const directoryName = path.parse(directory.path).base;
+      const createAlbumDto = {
+        ownerId: library.ownerId,
+        albumName: directoryName,
+        description: `Auto-generated album for ${directoryName}`,
+      };
+
+      const albumUsersDto = [
+        {
+          userId: library.ownerId,
+          role: AlbumUserRole.EDITOR,
+        },
+      ];
+
+      // Get all existing assets for this directory to include in the album
+      const allDirectoryAssets = await this.assetRepository.getbyLibraryIdAndDirectoryId(
+        library.id,
+        String(directory.id),
+      );
+      const allAssetIds = [
+        ...new Set([...newAssetIds, ...allDirectoryAssets.map((asset) => asset.id).filter(Boolean)]),
+      ];
+
+      const album = await this.albumRepository.create(createAlbumDto, allAssetIds, albumUsersDto);
+      this.logger.verbose(
+        `Created album ${album.id} with ${allAssetIds.length} asset(s) for directory ${directory.id}`,
+      );
+
+      // Try to update the directory with the album ID
+      try {
+        await this.directoryRepository.update(String(directory.id), { albumId: album.id });
+        this.logger.verbose(`Successfully linked album ${album.id} to directory ${directory.id}`);
+      } catch (updateError) {
+        // Check if another job already created an album (race condition)
+        const recheckDirectory = await this.directoryRepository.get(String(directory.id));
+        if (recheckDirectory?.albumId && recheckDirectory.albumId !== album.id) {
+          // Another job already created an album, delete our duplicate and add assets to the existing one
+          this.logger.verbose(
+            `Another job created album for directory ${directory.id}, cleaning up duplicate album ${album.id}`,
+          );
+          await this.albumRepository.delete(album.id);
+
+          if (newAssetIds.length > 0) {
+            await this.albumRepository.addAssetIds(recheckDirectory.albumId, newAssetIds);
+            this.logger.verbose(
+              `Added ${newAssetIds.length} asset(s) to existing album ${recheckDirectory.albumId} for directory ${directory.id}`,
+            );
+          }
+        } else {
+          // Some other error occurred
+          this.logger.error(`Failed to update directory ${directory.id} with album ${album.id}:`, updateError);
+          throw updateError;
+        }
+      }
+    } catch (error) {
+      this.logger.error(`Error creating/managing album for directory ${directory.id}:`, error);
+    }
+  } /**
+   * Add directories to a library without processing them
+   */
+  async addDirectoriesOnly(libraryId: string, directories: string[]): Promise<void> {
+    const library = await this.findOrFail(libraryId);
+
+    // Validate directory paths
+    const validatedPaths: string[] = [];
+    for (const directory of directories) {
+      if (!isAbsolute(directory)) {
+        throw new BadRequestException(`Directory path must be absolute: ${directory}`);
+      }
+
+      try {
+        await this.storageRepository.checkFileExists(directory, R_OK);
+        validatedPaths.push(directory);
+      } catch {
+        this.logger.warn(`Directory not accessible: ${directory}`);
+        throw new BadRequestException(`Directory not accessible: ${directory}`);
+      }
+    }
+
+    // Create directory entities with ADDED status using the same pattern as processDirectoryEntity
+    const directoryEntities = validatedPaths.map((directoryPath) =>
+      this.processDirectoryEntity(directoryPath, library.ownerId, library.id),
+    );
+
+    await this.directoryRepository.createAll(directoryEntities);
+    this.logger.log(`Added ${validatedPaths.length} directories to library ${libraryId}`);
+  }
+
+  /**
+   * Process all directories in ADDED status for a library
+   */
+  async processAddedDirectories(libraryId: string, force = false): Promise<void> {
+    const _library = await this.findOrFail(libraryId);
+
+    // Get all directories with ADDED status for this library
+    const addedDirectories = await this.directoryRepository.getByStatus([DirectoryStatus.ADDED]);
+    const libraryAddedDirectories = addedDirectories.filter((dir) => dir.libraryId === libraryId);
+
+    if (libraryAddedDirectories.length === 0) {
+      this.logger.log(`No directories in ADDED status found for library ${libraryId}`);
+      return;
+    }
+
+    // Update status to QUEUED
+    await Promise.all(
+      libraryAddedDirectories.map((dir) =>
+        this.directoryRepository.updateStatus(String(dir.id), DirectoryStatus.QUEUED),
+      ),
+    );
+
+    // Queue processing jobs
+    const directoryPaths = libraryAddedDirectories.map((dir) => dir.path);
+    await this.jobRepository.queue({
+      name: JobName.LIBRARY_SYNC_DIRECTORIES,
+      data: {
+        libraryId,
+        directories: directoryPaths,
+        force,
+      },
+    });
+
+    this.logger.log(`Queued processing for ${libraryAddedDirectories.length} directories in library ${libraryId}`);
+  }
+
+  /**
+   * Process specific directories by their IDs
+   */
+  async processDirectoriesByIds(directoryIds: string[], force = false): Promise<void> {
+    if (directoryIds.length === 0) {
+      throw new BadRequestException('Directory IDs array cannot be empty');
+    }
+
+    // Get directories and group by library
+    const directories = await Promise.all(directoryIds.map((id) => this.directoryRepository.get(id)));
+
+    // Group directories by library ID using a for loop
+    const libraryGroups: Record<string, typeof directories> = {};
+    for (const dir of directories) {
+      const libId = dir.libraryId;
+      if (libId) {
+        if (!libraryGroups[libId]) {
+          libraryGroups[libId] = [];
+        }
+        libraryGroups[libId].push(dir);
+      }
+    }
+
+    // Process each library group
+    for (const [libraryId, libraryDirectories] of Object.entries(libraryGroups)) {
+      // Update status to QUEUED
+      await Promise.all(
+        libraryDirectories.map((dir) => this.directoryRepository.updateStatus(String(dir.id), DirectoryStatus.QUEUED)),
+      );
+
+      // Queue processing jobs
+      const directoryPaths = libraryDirectories.map((dir) => dir.path);
+      await this.jobRepository.queue({
+        name: JobName.LIBRARY_SYNC_DIRECTORIES,
+        data: {
+          libraryId,
+          directories: directoryPaths,
+          force,
+        },
+      });
+    }
+
+    this.logger.log(
+      `Queued processing for ${directoryIds.length} directories across ${Object.keys(libraryGroups).length} libraries`,
+    );
+  }
+
+  /**
+   * Get directory status summary for a library
+   */
+  async getDirectoryStatusSummary(libraryId: string): Promise<Record<string, number>> {
+    await this.findOrFail(libraryId);
+
+    const directories = await this.directoryRepository.getByLibraryId(libraryId);
+
+    const summary = {
+      added: 0,
+      queued: 0,
+      processing: 0,
+      done: 0,
+      failed: 0,
+      skipped: 0,
+    };
+
+    for (const directory of directories) {
+      const status = String(directory.status);
+      switch (status) {
+        case 'added': {
+          summary.added++;
+          break;
+        }
+        case 'queued': {
+          summary.queued++;
+          break;
+        }
+        case 'processing': {
+          summary.processing++;
+          break;
+        }
+        case 'done': {
+          summary.done++;
+          break;
+        }
+        case 'failed': {
+          summary.failed++;
+          break;
+        }
+        case 'skipped': {
+          summary.skipped++;
+          break;
+        }
+      }
+    }
+
+    return summary;
   }
 
   private async findOrFail(id: string) {

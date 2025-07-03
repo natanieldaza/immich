@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
   CreateLibraryDto,
   LibraryResponseDto,
@@ -68,5 +68,123 @@ export class LibraryController {
   @Authenticated({ permission: Permission.LIBRARY_UPDATE, admin: true })
   scanLibrary(@Param() { id }: UUIDParamDto) {
     return this.service.queueScan(id);
+  }
+
+  @Post(':id/directories')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Authenticated({ permission: Permission.LIBRARY_UPDATE, admin: true })
+  @ApiResponse({ status: 204, description: 'Directories added successfully without processing' })
+  @ApiParam({ name: 'id', description: 'Library ID' })
+  @ApiBody({
+    description: 'Directory paths to add',
+    schema: {
+      type: 'object',
+      properties: {
+        directories: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Array of directory paths to add',
+        },
+      },
+      required: ['directories'],
+    },
+  })
+  addDirectoriesOnly(@Param() { id }: UUIDParamDto, @Body() { directories }: { directories: string[] }) {
+    return this.service.addDirectoriesOnly(id, directories);
+  }
+
+  @Post(':id/process-added')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Authenticated({ permission: Permission.LIBRARY_UPDATE, admin: true })
+  @ApiResponse({ status: 204, description: 'Started processing all directories in added status' })
+  @ApiParam({ name: 'id', description: 'Library ID' })
+  @ApiBody({
+    description: 'Processing options',
+    schema: {
+      type: 'object',
+      properties: {
+        force: {
+          type: 'boolean',
+          description: 'Force reprocessing of assets',
+          default: false,
+        },
+      },
+    },
+    required: false,
+  })
+  processAddedDirectories(@Param() { id }: UUIDParamDto, @Body() { force = false }: { force?: boolean } = {}) {
+    return this.service.processAddedDirectories(id, force);
+  }
+
+  @Post('directories/process')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Authenticated({ permission: Permission.LIBRARY_UPDATE, admin: true })
+  @ApiResponse({ status: 204, description: 'Started processing specific directories' })
+  @ApiBody({
+    description: 'Directory IDs and processing options',
+    schema: {
+      type: 'object',
+      properties: {
+        directoryIds: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Array of directory IDs to process',
+        },
+        force: {
+          type: 'boolean',
+          description: 'Force reprocessing of assets',
+          default: false,
+        },
+      },
+      required: ['directoryIds'],
+    },
+  })
+  processDirectoriesByIds(@Body() { directoryIds, force = false }: { directoryIds: string[]; force?: boolean }) {
+    return this.service.processDirectoriesByIds(directoryIds, force);
+  }
+
+  @Get(':id/directory-status')
+  @Authenticated({ permission: Permission.LIBRARY_READ, admin: true })
+  @ApiResponse({
+    status: 200,
+    description: 'Directory status summary for the library',
+    schema: {
+      type: 'object',
+      properties: {
+        added: { type: 'number' },
+        queued: { type: 'number' },
+        processing: { type: 'number' },
+        done: { type: 'number' },
+        failed: { type: 'number' },
+        skipped: { type: 'number' },
+      },
+    },
+  })
+  @ApiParam({ name: 'id', description: 'Library ID' })
+  getDirectoryStatusSummary(@Param() { id }: UUIDParamDto): Promise<Record<string, number>> {
+    return this.service.getDirectoryStatusSummary(id);
+  }
+
+  @Post(':id/scan-full')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Authenticated({ permission: Permission.LIBRARY_UPDATE, admin: true })
+  @ApiResponse({ status: 204, description: 'Started full library scan with directory creation and processing' })
+  @ApiParam({ name: 'id', description: 'Library ID' })
+  @ApiBody({
+    description: 'Scan options',
+    schema: {
+      type: 'object',
+      properties: {
+        force: {
+          type: 'boolean',
+          description: 'Force reprocessing of existing assets',
+          default: false,
+        },
+      },
+    },
+    required: false,
+  })
+  scanLibraryFull(@Param() { id }: UUIDParamDto, @Body() { force = false }: { force?: boolean } = {}) {
+    return this.service.queueScan(id, force);
   }
 }
